@@ -207,13 +207,18 @@ const StoreEditor = () => {
     setProcessing(true);
     const formData = new FormData();
     formData.append('file', selectedFile);
-    formData.append('store_id', storeId);
-    formData.append('filter_expressions', JSON.stringify(filterExpressions));
 
     try {
-      const response = await axios.post(`${API}/process`, formData, {
-        responseType: 'blob',
-      });
+      const response = await axios.post(
+        `${API}/process?store_id=${storeId}&filter_expressions=${encodeURIComponent(JSON.stringify(filterExpressions))}`,
+        formData,
+        {
+          responseType: 'blob',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
       // Download file
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -227,7 +232,8 @@ const StoreEditor = () => {
       toast.success('Заказ сформирован и загружен');
       setSelectedFile(null);
     } catch (error) {
-      toast.error('Ошибка обработки файла');
+      console.error('Process error:', error);
+      toast.error(error.response?.data?.detail || 'Ошибка обработки файла');
     } finally {
       setProcessing(false);
     }

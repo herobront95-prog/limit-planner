@@ -698,10 +698,11 @@ const StoreEditor = () => {
                     <li><code className="bg-blue-100 px-1 rounded">Лимиты</code> - значение лимита товара</li>
                     <li><code className="bg-blue-100 px-1 rounded">Остаток</code> - остаток на складе</li>
                     <li><code className="bg-blue-100 px-1 rounded">Заказ</code> - рассчитанный заказ</li>
-                    <li className="mt-2">Примеры выражений:</li>
-                    <li><code className="bg-blue-100 px-1 rounded">Заказ &gt; Лимиты / 3</code> - оставить только большие заказы</li>
-                    <li><code className="bg-blue-100 px-1 rounded">Лимиты * 2</code> - удвоить лимиты</li>
-                    <li><code className="bg-blue-100 px-1 rounded">Заказ != 1 or Лимиты != 2</code> - исключить заказы 1 при лимите 2</li>
+                    <li className="mt-2 font-semibold">Примеры фильтров:</li>
+                    <li><code className="bg-blue-100 px-1 rounded">Заказ &gt;= 5</code> - оставить только заказы от 5 единиц</li>
+                    <li><code className="bg-blue-100 px-1 rounded">Остаток &lt; Лимиты / 3</code> - заказывать если остаток меньше 1/3 лимита</li>
+                    <li><code className="bg-blue-100 px-1 rounded">Заказ != 1 and Заказ != 2</code> - исключить мелкие заказы (1 или 2)</li>
+                    <li><code className="bg-blue-100 px-1 rounded">Заказ &gt; Лимиты / 2</code> - заказывать только крупные партии</li>
                   </ul>
                 </div>
                 <div className="space-y-2">
@@ -709,7 +710,7 @@ const StoreEditor = () => {
                   <Input
                     id="filter-name"
                     data-testid="filter-name-input"
-                    placeholder="Например: Удвоение лимитов"
+                    placeholder="Например: Минимум 5 единиц"
                     value={newFilterName}
                     onChange={(e) => setNewFilterName(e.target.value)}
                   />
@@ -719,7 +720,7 @@ const StoreEditor = () => {
                   <Input
                     id="filter-expression"
                     data-testid="filter-expression-input"
-                    placeholder="Например: Лимиты * 2"
+                    placeholder="Например: Заказ >= 5"
                     value={newFilterExpression}
                     onChange={(e) => setNewFilterExpression(e.target.value)}
                     className="font-mono"

@@ -392,13 +392,20 @@ async def process_order(
         
         # Generate Excel response
         output = io.BytesIO()
-        df.to_excel(output, index=False)
+        df.to_excel(output, index=False, engine='openpyxl')
         output.seek(0)
+        
+        # URL encode filename for proper handling of Cyrillic characters
+        from urllib.parse import quote
+        filename = f"{store['name']}_order.xlsx"
+        encoded_filename = quote(filename)
         
         return StreamingResponse(
             output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment; filename={store['name']}_order.xlsx"}
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+            }
         )
     
     except Exception as e:

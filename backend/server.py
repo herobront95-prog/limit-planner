@@ -252,6 +252,31 @@ async def update_store_limits(store_id: str, limit_update: LimitBulkUpdate):
         )
         return {"message": "Limits updated successfully"}
 
+@api_router.put("/stores/{store_id}/limits/{product_name}")
+async def update_single_limit(store_id: str, product_name: str, new_limit: int):
+    """Update a single limit value"""
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    limits = store.get('limits', [])
+    found = False
+    
+    for item in limits:
+        if item['product'] == product_name:
+            item['limit'] = new_limit
+            found = True
+            break
+    
+    if not found:
+        raise HTTPException(status_code=404, detail="Limit not found")
+    
+    await db.stores.update_one(
+        {"id": store_id},
+        {"$set": {"limits": limits}}
+    )
+    return {"message": "Limit updated successfully"}
+
 @api_router.delete("/stores/{store_id}/limits/{product_name}")
 async def delete_limit(store_id: str, product_name: str, apply_to_all: bool = False):
     if apply_to_all:

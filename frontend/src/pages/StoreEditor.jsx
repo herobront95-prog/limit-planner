@@ -42,6 +42,8 @@ import {
   X,
   Save,
   Globe,
+  Edit2,
+  Check,
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -64,6 +66,8 @@ const StoreEditor = () => {
   const [newFilterName, setNewFilterName] = useState('');
   const [newFilterExpression, setNewFilterExpression] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [editingLimit, setEditingLimit] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
     fetchStore();
@@ -136,6 +140,36 @@ const StoreEditor = () => {
       fetchStore();
     } catch (error) {
       toast.error('Ошибка добавления лимитов');
+    }
+  };
+
+  const handleStartEdit = (productName, currentLimit) => {
+    setEditingLimit(productName);
+    setEditValue(currentLimit.toString());
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLimit(null);
+    setEditValue('');
+  };
+
+  const handleSaveEdit = async (productName) => {
+    const newLimit = parseInt(editValue);
+    if (isNaN(newLimit) || newLimit < 0) {
+      toast.error('Введите корректное число');
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${API}/stores/${storeId}/limits/${encodeURIComponent(productName)}?new_limit=${newLimit}`
+      );
+      toast.success('Лимит обновлен');
+      setEditingLimit(null);
+      setEditValue('');
+      fetchStore();
+    } catch (error) {
+      toast.error('Ошибка обновления лимита');
     }
   };
 
@@ -233,7 +267,8 @@ const StoreEditor = () => {
       setSelectedFile(null);
     } catch (error) {
       console.error('Process error:', error);
-      toast.error(error.response?.data?.detail || 'Ошибка обработки файла');
+      const errorMessage = error.response?.data?.detail || 'Ошибка обработки файла';
+      toast.error(errorMessage);
     } finally {
       setProcessing(false);
     }
@@ -424,7 +459,7 @@ const StoreEditor = () => {
             <CardHeader>
               <CardTitle style={{ fontFamily: 'Manrope, sans-serif' }}>Лимиты точки</CardTitle>
               <CardDescription>
-                Настройте лимиты для каждого товара
+                Нажмите на лимит для редактирования
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -443,7 +478,7 @@ const StoreEditor = () => {
                       <TableRow className="bg-gray-50">
                         <TableHead className="font-semibold">Товар</TableHead>
                         <TableHead className="font-semibold">Лимит</TableHead>
-                        <TableHead className="w-24"></TableHead>
+                        <TableHead className="w-32"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -451,9 +486,49 @@ const StoreEditor = () => {
                         <TableRow key={index} data-testid={`limit-row-${index}`}>
                           <TableCell className="font-medium">{limit.product}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
-                              {limit.limit}
-                            </Badge>
+                            {editingLimit === limit.product ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  type="number"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  className="w-20 h-8"
+                                  autoFocus
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveEdit(limit.product);
+                                    } else if (e.key === 'Escape') {
+                                      handleCancelEdit();
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-green-600"
+                                  onClick={() => handleSaveEdit(limit.product)}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  onClick={handleCancelEdit}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="bg-indigo-50 text-indigo-700 border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-colors"
+                                onClick={() => handleStartEdit(limit.product, limit.limit)}
+                              >
+                                {limit.limit}
+                                <Edit2 className="h-3 w-3 ml-2" />
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
@@ -501,12 +576,15 @@ const StoreEditor = () => {
           <div className="space-y-4 py-4">
             <Textarea
               data-testid="limits-textarea"
-              placeholder="Пример:\nДарксайд 25 - 2\nКвазар X - 5\nМегаТор 100 - 10"
+              placeholder="Пример:
+Дарксайд 25 - 2
+Квазар X - 5
+МегаТор 100 - 10"
               value={newLimitsText}
               onChange={(e) => setNewLimitsText(e.target.value)}
               className="min-h-[200px] font-mono text-sm"
             />
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
               <Switch
                 id="apply-to-all"
                 data-testid="apply-to-all-switch"
@@ -514,7 +592,7 @@ const StoreEditor = () => {
                 onCheckedChange={setApplyToAll}
               />
               <Label htmlFor="apply-to-all" className="cursor-pointer">
-                Применить ко всем точкам
+                Добавить во все точки (не заменит существующие лимиты)
               </Label>
             </div>
           </div>

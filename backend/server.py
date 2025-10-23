@@ -397,14 +397,16 @@ async def process_order(
         
         # URL encode filename for proper handling of Cyrillic characters
         from urllib.parse import quote
-        filename = f"{store['name']}_order.xlsx"
+        # Filename is just store name
+        filename = f"{store['name']}.xlsx"
         encoded_filename = quote(filename)
         
         return StreamingResponse(
             output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={
-                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+                "Access-Control-Expose-Headers": "Content-Disposition"
             }
         )
     

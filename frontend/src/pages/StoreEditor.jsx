@@ -254,16 +254,31 @@ const StoreEditor = () => {
         }
       );
 
-      // Download file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Create blob and download file
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${store.name}_заказ.xlsx`);
+      
+      // Filename: just store name (no suffix)
+      const filename = `${store.name}.xlsx`;
+      link.download = filename;
+      
+      // Force download
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
 
-      toast.success('Заказ сформирован и загружен');
+      toast.success(`Файл "${filename}" загружен`);
       setSelectedFile(null);
     } catch (error) {
       console.error('Process error:', error);

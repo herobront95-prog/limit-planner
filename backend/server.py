@@ -212,12 +212,26 @@ async def delete_store(store_id: str):
 @api_router.post("/stores/{store_id}/limits")
 async def update_store_limits(store_id: str, limit_update: LimitBulkUpdate):
     if limit_update.apply_to_all:
-        # Apply to all stores
-        result = await db.stores.update_many(
-            {},
-            {"$set": {"limits": [item.model_dump() for item in limit_update.limits]}}
-        )
-        return {"message": f"Updated limits for {result.modified_count} stores"}
+        # Apply to all stores - merge with existing limits
+        all_stores = await db.stores.find({}).to_list(1000)
+        modified_count = 0
+        
+        for store in all_stores:
+            existing_limits = {item['product']: item['limit'] for item in store.get('limits', [])}
+            
+            # Add/update new limits
+            for new_limit in limit_update.limits:
+                existing_limits[new_limit.product] = new_limit.limit
+            
+            merged_limits = [{"product": k, "limit": v} for k, v in existing_limits.items()]
+            
+            await db.stores.update_one(
+                {"id": store['id']},
+                {"$set": {"limits": merged_limits}}
+            )
+            modified_count += 1
+        
+        return {"message": f"Updated limits for {modified_count} stores"}
     else:
         # Apply to single store
         store = await db.stores.find_one({"id": store_id})

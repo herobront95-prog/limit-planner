@@ -68,6 +68,8 @@ const StoreEditor = () => {
   const [processing, setProcessing] = useState(false);
   const [editingLimit, setEditingLimit] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [pastedData, setPastedData] = useState('');
+  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'paste'
 
   useEffect(() => {
     fetchStore();

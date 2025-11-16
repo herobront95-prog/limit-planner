@@ -462,41 +462,72 @@ const StoreEditor = () => {
                 Загрузка остатков
               </CardTitle>
               <CardDescription>
-                Загрузите Excel файл с колонками "Товар" и "Остаток"
+                Загрузите файл или вставьте данные
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div
-                data-testid="drop-zone"
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-300 ${
-                  isDragging
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-300 hover:border-indigo-400 bg-gray-50'
-                }`}
-              >
-                <Upload
-                  className={`h-12 w-12 mx-auto mb-3 ${
-                    isDragging ? 'text-indigo-600' : 'text-gray-400'
-                  }`}
-                />
-                <p className="text-sm text-gray-600 mb-1">
-                  {selectedFile
-                    ? selectedFile.name
-                    : 'Перетащите файл сюда'}
-                </p>
-                <p className="text-xs text-gray-500">или нажмите для выбора</p>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+              {/* Tabs for upload method */}
+              <Tabs value={uploadMethod} onValueChange={setUploadMethod} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="file">Файл</TabsTrigger>
+                  <TabsTrigger value="paste">Вставить</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="file" className="space-y-4 mt-4">
+                  <div
+                    data-testid="drop-zone"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-300 ${
+                      isDragging
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-gray-300 hover:border-indigo-400 bg-gray-50'
+                    }`}
+                  >
+                    <Upload
+                      className={`h-12 w-12 mx-auto mb-3 ${
+                        isDragging ? 'text-indigo-600' : 'text-gray-400'
+                      }`}
+                    />
+                    <p className="text-sm text-gray-600 mb-1">
+                      {selectedFile
+                        ? selectedFile.name
+                        : 'Перетащите файл сюда'}
+                    </p>
+                    <p className="text-xs text-gray-500">или нажмите для выбора</p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </TabsContent>
+
+                <TabsContent value="paste" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Вставьте данные из Excel/таблицы:</Label>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-800">
+                      💡 Скопируйте 2 колонки из Excel (Товар и Остаток) и вставьте сюда
+                    </div>
+                    <Textarea
+                      placeholder={"Пример:\nТовар1\t5\nТовар2\t10\nТовар3\t2"}
+                      value={pastedData}
+                      onChange={(e) => setPastedData(e.target.value)}
+                      className="min-h-[200px] font-mono text-xs"
+                      data-testid="paste-data-textarea"
+                    />
+                    {pastedData && (
+                      <p className="text-xs text-gray-600">
+                        Строк: {pastedData.split('\n').filter(l => l.trim()).length}
+                      </p>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
 
               {filterExpressions.length > 0 && (
                 <div className="space-y-2">
@@ -522,7 +553,7 @@ const StoreEditor = () => {
               <Button
                 data-testid="process-file-btn"
                 onClick={handleProcessFile}
-                disabled={!selectedFile || processing}
+                disabled={(uploadMethod === 'file' && !selectedFile) || (uploadMethod === 'paste' && !pastedData.trim()) || processing}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 {processing ? (

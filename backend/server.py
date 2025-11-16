@@ -296,6 +296,108 @@ async def delete_limit(store_id: str, product_name: str, apply_to_all: bool = Fa
             raise HTTPException(status_code=404, detail="Limit not found")
         return {"message": "Limit deleted successfully"}
 
+# Process Text Data (pasted from clipboard)
+class TextDataItem(BaseModel):
+    product: str
+    stock: float
+
+class ProcessTextRequest(BaseModel):
+    store_id: str
+    data: List[TextDataItem]
+    filter_expressions: List[str] = Field(default_factory=list)
+
+@api_router.post("/process-text")
+async def process_text_data(request: ProcessTextRequest):
+    try:
+        # Get store limits
+        store = await db.stores.find_one({"id": request.store_id})
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        
+        limits_dict = {item['product']: item['limit'] for item in store.get('limits', [])}
+        
+        # Convert text data to DataFrame
+        data_dict = {
+            'Товар': [item.product for item in request.data],
+            'Остаток': [item.stock for item in request.data]
+        }
+        df = pd.DataFrame(data_dict)
+        
+        # Process data (same as Excel processing)
+        df['Остаток'] = pd.to_numeric(df['Остаток'], errors='coerce').fillna(0)
+        df['Товар'] = df['Товар'].astype(str)
+        
+        # Filter products with limits
+        def should_keep(product_name):
+            match = find_best_match_improved(product_name, limits_dict)
+            return match is not None and limits_dict[match] > 0
+        
+        df = df[df['Товар'].apply(should_keep)]
+        
+        # Calculate order
+        def calculate_order(row):
+            product_name = row['Товар']
+            match = find_best_match_improved(product_name, limits_dict)
+            if match:
+                return max(0, limits_dict[match] - row['Остаток'])
+            return 0
+        
+        df['Заказ'] = df.apply(calculate_order, axis=1)
+        
+        # Add limits column
+        df['Matched_Product'] = df['Товар'].apply(lambda x: find_best_match_improved(x, limits_dict))
+        df['Лимиты'] = df['Matched_Product'].apply(lambda x: limits_dict[x] if x else 0)
+        df = df.drop('Matched_Product', axis=1)
+        
+        # Remove zero orders
+        df = df[df['Заказ'] > 0]
+        
+        # Apply custom filters
+        if request.filter_expressions:
+            for expr in request.filter_expressions:
+                if expr.strip():
+                    df = df[df.apply(
+                        lambda row: evaluate_filter_expression(
+                            expr,
+                            row['Лимиты'],
+                            row['Остаток'],
+                            row['Заказ']
+                        ),
+                        axis=1
+                    )]
+        
+        # Check if empty
+        if len(df) == 0:
+            raise HTTPException(
+                status_code=400, 
+                detail="Не найдено товаров для заказа. Проверьте лимиты и названия товаров."
+            )
+        
+        # Generate Excel response
+        output = io.BytesIO()
+        df.to_excel(output, index=False, engine='openpyxl')
+        output.seek(0)
+        
+        # URL encode filename
+        from urllib.parse import quote
+        filename = f"{store['name']}.xlsx"
+        encoded_filename = quote(filename)
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Filter Management
 @api_router.get("/filters", response_model=List[FilterExpression])
 async def get_filters():

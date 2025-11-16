@@ -234,27 +234,98 @@ const StoreEditor = () => {
     }
   };
 
+  const parsePastedData = (text) => {
+    try {
+      const lines = text.trim().split('\n');
+      if (lines.length === 0) {
+        throw new Error('Нет данных');
+      }
+
+      const data = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Split by tab or multiple spaces
+        const parts = line.split(/\t|  +/);
+        
+        if (parts.length >= 2) {
+          const product = parts[0].trim();
+          const stock = parseFloat(parts[1].trim());
+          
+          // Skip header row if detected
+          if (i === 0 && (product.toLowerCase().includes('товар') || isNaN(stock))) {
+            continue;
+          }
+          
+          if (product && !isNaN(stock)) {
+            data.push({ product, stock });
+          }
+        }
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error('Ошибка парсинга данных');
+    }
+  };
+
   const handleProcessFile = async () => {
-    if (!selectedFile) {
+    // Check which method is being used
+    if (uploadMethod === 'file' && !selectedFile) {
       toast.error('Выберите файл с остатками');
       return;
     }
 
+    if (uploadMethod === 'paste' && !pastedData.trim()) {
+      toast.error('Вставьте данные остатков');
+      return;
+    }
+
     setProcessing(true);
-    const formData = new FormData();
-    formData.append('file', selectedFile);
 
     try {
-      const response = await axios.post(
-        `${API}/process?store_id=${storeId}&filter_expressions=${encodeURIComponent(JSON.stringify(filterExpressions))}`,
-        formData,
-        {
-          responseType: 'blob',
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+      let response;
+
+      if (uploadMethod === 'file') {
+        // Original file upload method
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        response = await axios.post(
+          `${API}/process?store_id=${storeId}&filter_expressions=${encodeURIComponent(JSON.stringify(filterExpressions))}`,
+          formData,
+          {
+            responseType: 'blob',
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+      } else {
+        // Paste method - send as JSON
+        const parsedData = parsePastedData(pastedData);
+        
+        if (parsedData.length === 0) {
+          toast.error('Не найдено корректных данных. Формат: Товар [TAB] Остаток');
+          setProcessing(false);
+          return;
         }
-      );
+
+        toast.info(`Обработка ${parsedData.length} позиций...`);
+
+        response = await axios.post(
+          `${API}/process-text`,
+          {
+            store_id: storeId,
+            data: parsedData,
+            filter_expressions: filterExpressions,
+          },
+          {
+            responseType: 'blob',
+          }
+        );
+      }
 
       // Create blob and download file
       const blob = new Blob([response.data], {
@@ -265,16 +336,13 @@ const StoreEditor = () => {
       const link = document.createElement('a');
       link.href = url;
       
-      // Filename: just store name (no suffix)
       const filename = `${store.name}.xlsx`;
       link.download = filename;
       
-      // Force download
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       
-      // Cleanup
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -282,9 +350,10 @@ const StoreEditor = () => {
 
       toast.success(`Файл "${filename}" загружен`);
       setSelectedFile(null);
+      setPastedData('');
     } catch (error) {
       console.error('Process error:', error);
-      const errorMessage = error.response?.data?.detail || 'Ошибка обработки файла';
+      const errorMessage = error.response?.data?.detail || 'Ошибка обработки данных';
       toast.error(errorMessage);
     } finally {
       setProcessing(false);

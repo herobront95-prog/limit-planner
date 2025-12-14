@@ -336,7 +336,15 @@ const StoreEditor = () => {
           return;
         }
 
-        toast.info(`Обработка ${parsedData.length} позиций...`);
+        const totalLines = pastedData.split('\n').filter(l => l.trim()).length;
+        const parsed = parsedData.length;
+        const skipped = totalLines - parsed;
+        
+        if (skipped > 0) {
+          toast.info(`Обработка: ${parsed} позиций (пропущено: ${skipped})`);
+        } else {
+          toast.info(`Обработка ${parsed} позиций...`);
+        }
 
         response = await axios.post(
           `${API}/process-text`,

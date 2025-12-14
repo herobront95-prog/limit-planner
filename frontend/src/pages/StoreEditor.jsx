@@ -177,6 +177,40 @@ const StoreEditor = () => {
     }
   };
 
+  const handleStartEditLimitName = (productName) => {
+    setEditingLimitName(productName);
+    setEditNameValue(productName);
+  };
+
+  const handleCancelEditLimitName = () => {
+    setEditingLimitName(null);
+    setEditNameValue('');
+  };
+
+  const handleSaveLimitName = async (oldProductName) => {
+    if (!editNameValue.trim()) {
+      toast.error('Введите название товара');
+      return;
+    }
+
+    if (editNameValue.trim() === oldProductName) {
+      handleCancelEditLimitName();
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${API}/stores/${storeId}/limits/${encodeURIComponent(oldProductName)}/rename`,
+        { new_name: editNameValue.trim() }
+      );
+      toast.success('Название обновлено');
+      handleCancelEditLimitName();
+      fetchStore();
+    } catch (error) {
+      toast.error('Ошибка обновления названия');
+    }
+  };
+
   const handleDeleteLimit = async (productName, deleteFromAll = false) => {
     try {
       await axios.delete(

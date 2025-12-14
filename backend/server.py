@@ -155,6 +155,7 @@ def evaluate_filter_expression(expression: str, limits: float, ostatok: float, z
 async def apply_product_mappings(df: pd.DataFrame) -> pd.DataFrame:
     """
     Apply product mappings (synonyms) and merge rows with same products.
+    Searches for synonyms as SUBSTRINGS in product names (like limits matching).
     Sums up stock values for merged products.
     """
     try:
@@ -164,25 +165,38 @@ async def apply_product_mappings(df: pd.DataFrame) -> pd.DataFrame:
         if not mappings:
             return df
         
-        # Create a lookup dict: synonym -> main_product
-        synonym_map = {}
+        # Build list of (pattern, main_product) - both synonyms and main_product patterns
+        patterns = []
         for mapping in mappings:
             main_product = mapping['main_product']
+            # Add main product itself as a pattern
+            patterns.append((main_product.lower().strip(), main_product))
+            # Add all synonyms as patterns
             for synonym in mapping.get('synonyms', []):
-                # Case-insensitive mapping
-                synonym_map[synonym.lower().strip()] = main_product
+                patterns.append((synonym.lower().strip(), main_product))
         
-        # Apply mappings to product names
+        # Sort patterns by length (longest first) to match most specific first
+        patterns.sort(key=lambda x: len(x[0]), reverse=True)
+        
+        # Apply mappings to product names using substring search
         def map_product(product_name):
             product_lower = str(product_name).lower().strip()
-            return synonym_map.get(product_lower, product_name)
+            
+            # Search for any pattern as substring in product name
+            for pattern, main_product in patterns:
+                if pattern in product_lower:
+                    logging.info(f"Mapped '{product_name}' -> '{main_product}' (matched: '{pattern}')")
+                    return main_product
+            
+            # No match found - return original
+            return product_name
         
         df['Товар'] = df['Товар'].apply(map_product)
         
         # Group by product and sum stock values
         df = df.groupby('Товар', as_index=False).agg({'Остаток': 'sum'})
         
-        logging.info(f"Applied {len(synonym_map)} product mappings")
+        logging.info(f"Applied product mappings with {len(patterns)} patterns")
         
         return df
     except Exception as e:

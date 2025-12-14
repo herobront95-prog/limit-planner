@@ -366,6 +366,34 @@ async def update_single_limit(store_id: str, product_name: str, new_limit: int):
     )
     return {"message": "Limit updated successfully"}
 
+class LimitRenameRequest(BaseModel):
+    new_name: str
+
+@api_router.put("/stores/{store_id}/limits/{product_name}/rename")
+async def rename_limit(store_id: str, product_name: str, request: LimitRenameRequest):
+    """Rename a limit's product name"""
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    limits = store.get('limits', [])
+    found = False
+    
+    for item in limits:
+        if item['product'] == product_name:
+            item['product'] = request.new_name
+            found = True
+            break
+    
+    if not found:
+        raise HTTPException(status_code=404, detail="Limit not found")
+    
+    await db.stores.update_one(
+        {"id": store_id},
+        {"$set": {"limits": limits}}
+    )
+    return {"message": "Limit renamed successfully"}
+
 @api_router.delete("/stores/{store_id}/limits/{product_name}")
 async def delete_limit(store_id: str, product_name: str, apply_to_all: bool = False):
     if apply_to_all:

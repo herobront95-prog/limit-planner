@@ -242,31 +242,55 @@ const StoreEditor = () => {
       }
 
       const data = [];
+      let skippedRows = 0;
+      
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line) continue;
+        if (!line) {
+          skippedRows++;
+          continue;
+        }
 
-        // Split by tab or multiple spaces
-        const parts = line.split(/\t|  +/);
+        // Split by tab, semicolon, or multiple spaces
+        const parts = line.split(/\t|;|  +/);
         
-        if (parts.length >= 2) {
+        if (parts.length >= 1) {
           const product = parts[0].trim();
-          const stock = parseFloat(parts[1].trim());
+          
+          // Get stock value (second column)
+          let stockStr = parts.length >= 2 ? parts[1].trim() : '';
           
           // Skip header row if detected
-          if (i === 0 && (product.toLowerCase().includes('товар') || isNaN(stock))) {
+          if (i === 0 && product.toLowerCase().includes('товар')) {
             continue;
           }
           
-          if (product && !isNaN(stock)) {
-            data.push({ product, stock });
+          // Skip if product name is empty
+          if (!product || product === '') {
+            skippedRows++;
+            continue;
           }
+          
+          // Parse stock - if empty or not a number, use 0
+          let stock = 0;
+          if (stockStr && stockStr !== '') {
+            const parsed = parseFloat(stockStr);
+            stock = isNaN(parsed) ? 0 : parsed;
+          }
+          
+          data.push({ product, stock });
+        } else {
+          skippedRows++;
         }
+      }
+
+      if (skippedRows > 0) {
+        console.log(`Пропущено строк: ${skippedRows}`);
       }
 
       return data;
     } catch (error) {
-      throw new Error('Ошибка парсинга данных');
+      throw new Error('Ошибка парсинга данных: ' + error.message);
     }
   };
 

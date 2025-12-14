@@ -473,6 +473,52 @@ async def delete_filter(filter_id: str):
         raise HTTPException(status_code=404, detail="Filter not found")
     return {"message": "Filter deleted successfully"}
 
+# Product Mappings Management
+@api_router.get("/product-mappings", response_model=List[ProductMapping])
+async def get_product_mappings():
+    mappings = await db.product_mappings.find({}, {"_id": 0}).to_list(1000)
+    for m in mappings:
+        if isinstance(m.get('created_at'), str):
+            m['created_at'] = datetime.fromisoformat(m['created_at'])
+    return mappings
+
+@api_router.post("/product-mappings", response_model=ProductMapping)
+async def create_product_mapping(mapping_input: ProductMappingCreate):
+    # Check if main_product already exists
+    existing = await db.product_mappings.find_one({"main_product": mapping_input.main_product})
+    if existing:
+        raise HTTPException(status_code=400, detail="Mapping for this product already exists")
+    
+    mapping_obj = ProductMapping(**mapping_input.model_dump())
+    doc = mapping_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.product_mappings.insert_one(doc)
+    return mapping_obj
+
+@api_router.put("/product-mappings/{mapping_id}", response_model=ProductMapping)
+async def update_product_mapping(mapping_id: str, mapping_update: ProductMappingUpdate):
+    mapping = await db.product_mappings.find_one({"id": mapping_id})
+    if not mapping:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+    
+    update_data = {k: v for k, v in mapping_update.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.product_mappings.update_one({"id": mapping_id}, {"$set": update_data})
+    
+    updated_mapping = await db.product_mappings.find_one({"id": mapping_id}, {"_id": 0})
+    if isinstance(updated_mapping.get('created_at'), str):
+        updated_mapping['created_at'] = datetime.fromisoformat(updated_mapping['created_at'])
+    return updated_mapping
+
+@api_router.delete("/product-mappings/{mapping_id}")
+async def delete_product_mapping(mapping_id: str):
+    result = await db.product_mappings.delete_one({"id": mapping_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+    return {"message": "Mapping deleted successfully"}
+
 # Process Excel file
 @api_router.post("/process")
 async def process_order(

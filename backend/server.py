@@ -377,6 +377,9 @@ async def process_text_data(request: ProcessTextRequest):
         df['Остаток'] = pd.to_numeric(df['Остаток'], errors='coerce').fillna(0)
         df['Товар'] = df['Товар'].astype(str)
         
+        # Apply product mappings (merge synonyms and sum stock)
+        df = await apply_product_mappings(df)
+        
         # Filter products with limits
         def should_keep(product_name):
             match = find_best_match_improved(product_name, limits_dict)
@@ -548,6 +551,9 @@ async def process_order(
         # Process data
         df['Остаток'] = pd.to_numeric(df['Остаток'], errors='coerce').fillna(0)
         df['Товар'] = df['Товар'].astype(str)
+        
+        # Apply product mappings (merge synonyms and sum stock)
+        df = await apply_product_mappings(df)
         
         # Filter products with limits
         def should_keep(product_name):

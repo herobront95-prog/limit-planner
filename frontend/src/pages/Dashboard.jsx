@@ -51,6 +51,8 @@ const Dashboard = () => {
   const [storeToDelete, setStoreToDelete] = useState(null);
   const [newStoreName, setNewStoreName] = useState('');
   const [copyFromStoreId, setCopyFromStoreId] = useState('');
+  const [editingStoreId, setEditingStoreId] = useState(null);
+  const [editStoreName, setEditStoreName] = useState('');
 
   useEffect(() => {
     fetchStores();

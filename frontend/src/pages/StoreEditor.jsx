@@ -669,7 +669,49 @@ const StoreEditor = () => {
                     <TableBody>
                       {store.limits.map((limit, index) => (
                         <TableRow key={index} data-testid={`limit-row-${index}`}>
-                          <TableCell className="font-medium">{limit.product}</TableCell>
+                          <TableCell className="font-medium">
+                            {editingLimitName === limit.product ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  value={editNameValue}
+                                  onChange={(e) => setEditNameValue(e.target.value)}
+                                  className="h-8 flex-1 min-w-[200px]"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveLimitName(limit.product);
+                                    } else if (e.key === 'Escape') {
+                                      handleCancelEditLimitName();
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-green-600"
+                                  onClick={() => handleSaveLimitName(limit.product)}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  onClick={handleCancelEditLimitName}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 hover:underline"
+                                onClick={() => handleStartEditLimitName(limit.product)}
+                                title="Нажмите для редактирования"
+                              >
+                                {limit.product}
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             {editingLimit === limit.product ? (
                               <div className="flex items-center space-x-2">
@@ -679,7 +721,7 @@ const StoreEditor = () => {
                                   onChange={(e) => setEditValue(e.target.value)}
                                   className="w-20 h-8"
                                   autoFocus
-                                  onKeyPress={(e) => {
+                                  onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       handleSaveEdit(limit.product);
                                     } else if (e.key === 'Escape') {

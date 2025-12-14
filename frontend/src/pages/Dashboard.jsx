@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Plus, Store as StoreIcon, Trash2, Edit2, FileSpreadsheet } from 'lucide-react';
+import { Plus, Store as StoreIcon, Trash2, Edit2, FileSpreadsheet, Link2 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 

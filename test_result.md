@@ -101,3 +101,134 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Migrate Python script into full-stack web app for calculating orders based on stock and limits"
+
+backend:
+  - task: "Store CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Store CRUD endpoints working properly"
+
+  - task: "Limits Management API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Limits CRUD with bulk update and inline editing working"
+
+  - task: "Order Processing API (Excel upload)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Excel file processing with product mapping integration"
+
+  - task: "Order Processing API (Text paste)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Text paste processing with product mapping integration"
+
+  - task: "Product Mappings API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "CRUD endpoints created. apply_product_mappings function integrated into process_order and process_text_data endpoints"
+
+  - task: "Filters API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Filter expressions CRUD and evaluation working"
+
+frontend:
+  - task: "Dashboard with Store Cards"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Dashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added Product Mappings button and inline store name editing"
+
+  - task: "Store Editor Page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/StoreEditor.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Full functionality with file upload, paste data, filters, inline limit editing"
+
+  - task: "Product Mappings Page"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/ProductMappings.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW PAGE - Created ProductMappings.jsx with full CRUD UI for managing product synonyms"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Product Mappings API"
+    - "Product Mappings Page"
+    - "Dashboard with Store Cards"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented Product Mappings feature: 1) Integrated apply_product_mappings into process_order and process_text_data endpoints 2) Created new ProductMappings.jsx page with full CRUD UI 3) Added 'Маппинг продуктов' button to Dashboard 4) Added inline store name editing to Dashboard. Please test: a) Product mappings CRUD via API b) Product mappings UI page c) Data processing with synonyms merging d) Inline store name editing on dashboard"

@@ -102,6 +102,38 @@ const Dashboard = () => {
     }
   };
 
+  const handleStartEditStoreName = (e, store) => {
+    e.stopPropagation();
+    setEditingStoreId(store.id);
+    setEditStoreName(store.name);
+  };
+
+  const handleCancelEditStoreName = (e) => {
+    if (e) e.stopPropagation();
+    setEditingStoreId(null);
+    setEditStoreName('');
+  };
+
+  const handleSaveStoreName = async (e) => {
+    e.stopPropagation();
+    if (!editStoreName.trim()) {
+      toast.error('Введите название точки');
+      return;
+    }
+
+    try {
+      await axios.put(`${API}/stores/${editingStoreId}`, {
+        name: editStoreName.trim(),
+      });
+      toast.success('Название обновлено');
+      setEditingStoreId(null);
+      setEditStoreName('');
+      fetchStores();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Ошибка обновления');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}

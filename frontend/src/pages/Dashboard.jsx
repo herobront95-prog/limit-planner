@@ -112,16 +112,26 @@ const Dashboard = () => {
               </h1>
               <p className="text-gray-600 mt-1">Управление торговыми точками и лимитами</p>
             </div>
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  data-testid="create-store-btn"
-                  className="bg-indigo-600 hover:bg-indigo-700 shadow-md"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Создать точку
-                </Button>
-              </DialogTrigger>
+            <div className="flex space-x-3">
+              <Button 
+                data-testid="mappings-btn"
+                variant="outline"
+                className="border-indigo-200 hover:bg-indigo-50"
+                onClick={() => navigate('/mappings')}
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Маппинг продуктов
+              </Button>
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    data-testid="create-store-btn"
+                    className="bg-indigo-600 hover:bg-indigo-700 shadow-md"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Создать точку
+                  </Button>
+                </DialogTrigger>
               <DialogContent data-testid="create-store-dialog">
                 <DialogHeader>
                   <DialogTitle>Создать новую точку</DialogTitle>

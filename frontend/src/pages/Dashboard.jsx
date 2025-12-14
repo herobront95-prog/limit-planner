@@ -241,7 +241,7 @@ const Dashboard = () => {
                 key={store.id} 
                 data-testid={`store-card-${store.id}`}
                 className="bg-white/70 backdrop-blur-sm hover:shadow-lg transition-all duration-300 border-0 ring-1 ring-gray-200 hover:ring-indigo-300 cursor-pointer group"
-                onClick={() => navigate(`/store/${store.id}`)}
+                onClick={() => editingStoreId !== store.id && navigate(`/store/${store.id}`)}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -250,9 +250,49 @@ const Dashboard = () => {
                         <StoreIcon className="h-6 w-6 text-indigo-600" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                          {store.name}
-                        </CardTitle>
+                        {editingStoreId === store.id ? (
+                          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              value={editStoreName}
+                              onChange={(e) => setEditStoreName(e.target.value)}
+                              className="h-8 w-40"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveStoreName(e);
+                                } else if (e.key === 'Escape') {
+                                  handleCancelEditStoreName(e);
+                                }
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-green-600"
+                              onClick={handleSaveStoreName}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={handleCancelEditStoreName}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div 
+                            className="flex items-center group/name cursor-pointer"
+                            onClick={(e) => handleStartEditStoreName(e, store)}
+                          >
+                            <CardTitle className="text-xl" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                              {store.name}
+                            </CardTitle>
+                            <Edit2 className="h-3 w-3 ml-2 text-gray-400 opacity-0 group-hover/name:opacity-100 transition-opacity" />
+                          </div>
+                        )}
                         <CardDescription className="mt-1">
                           {store.limits.length} лимитов
                         </CardDescription>
@@ -276,7 +316,6 @@ const Dashboard = () => {
                 <CardContent>
                   <div className="flex items-center justify-between text-sm text-gray-600">
                     <span>Создано: {new Date(store.created_at).toLocaleDateString('ru-RU')}</span>
-                    <Edit2 className="h-4 w-4 text-indigo-600" />
                   </div>
                 </CardContent>
               </Card>

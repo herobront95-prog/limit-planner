@@ -139,12 +139,10 @@ def evaluate_filter_expression(expression: str, limits: float, ostatok: float, z
     Supported: Лимиты, Остаток, Заказ, +, -, *, /, >, <, >=, <=, ==, !=
     """
     try:
-        # Replace Russian variable names with values
         expr = expression.replace('Лимиты', str(limits))
         expr = expr.replace('Остаток', str(ostatok))
         expr = expr.replace('Заказ', str(zakaz))
         
-        # Secure evaluation - only allow math and comparison operators
         allowed_names = {}
         allowed_ops = {'__builtins__': {}}
         
@@ -152,7 +150,44 @@ def evaluate_filter_expression(expression: str, limits: float, ostatok: float, z
         return bool(result)
     except Exception as e:
         logging.error(f"Filter expression error: {e}")
-        return True  # If error, don't filter out
+        return True
+
+async def apply_product_mappings(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply product mappings (synonyms) and merge rows with same products.
+    Sums up stock values for merged products.
+    """
+    try:
+        # Get all mappings
+        mappings = await db.product_mappings.find({}, {"_id": 0}).to_list(1000)
+        
+        if not mappings:
+            return df
+        
+        # Create a lookup dict: synonym -> main_product
+        synonym_map = {}
+        for mapping in mappings:
+            main_product = mapping['main_product']
+            for synonym in mapping.get('synonyms', []):
+                # Case-insensitive mapping
+                synonym_map[synonym.lower().strip()] = main_product
+        
+        # Apply mappings to product names
+        def map_product(product_name):
+            product_lower = str(product_name).lower().strip()
+            return synonym_map.get(product_lower, product_name)
+        
+        df['Товар'] = df['Товар'].apply(map_product)
+        
+        # Group by product and sum stock values
+        df = df.groupby('Товар', as_index=False).agg({'Остаток': 'sum'})
+        
+        logging.info(f"Applied {len(synonym_map)} product mappings")
+        
+        return df
+    except Exception as e:
+        logging.error(f"Error applying product mappings: {e}")
+        return df
 
 
 # API Routes

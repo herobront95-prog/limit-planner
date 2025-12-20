@@ -269,3 +269,49 @@ agent_communication:
       - Verified Excel formatting requirements exactly as specified
       - Confirmed UTF-8 encoding and proper file downloads
       - All backend APIs are production-ready
+
+  - agent: "testing"
+    message: |
+      🎉 COMPREHENSIVE FRONTEND TESTING COMPLETED - ALL TESTS PASSED!
+      
+      ✅ Dashboard Features: 2/2 tests PASSED
+      - "Загрузить общие остатки" button present and functional ✅
+      - Navigation to /global-stock page working ✅
+      
+      ✅ Global Stock Page: 5/5 tests PASSED  
+      - Upload area with drag-drop zone visible ✅
+      - Format help section shows correct Excel format ✅
+      - History table displays properly ✅
+      - Back button navigation works ✅
+      - Page loads correctly at /global-stock route ✅
+      
+      ✅ Store Editor New Features: 4/4 tests PASSED
+      - "Остатки" button (blue outline) present in header ✅
+      - "История заявок" button (green outline) present in header ✅
+      - "Загрузить из общих остатков" checkbox appears when available ✅
+      - Navigation between all pages smooth ✅
+      
+      ✅ Order History Page: 6/6 tests PASSED
+      - Page loads with orders list ✅
+      - Eye icon opens order details modal ✅
+      - First column correctly named as store name (not "Товар") ✅
+      - Second column named "Заказ" ✅
+      - Bold text present in table ✅
+      - "Сохранить" button found in modal ✅
+      
+      ✅ Stock History Page: 4/4 tests PASSED
+      - Period selector (День/Неделя/Месяц/Год) functional ✅
+      - Search input for filtering products visible ✅
+      - Chart dialog opens with Остатки and Заказы graphs ✅
+      - Period selector in chart dialog present ✅
+      
+      ✅ Navigation Testing: 3/3 tests PASSED
+      - All back buttons work correctly ✅
+      - Navigation between pages smooth ✅
+      - URL routing working properly ✅
+      
+      🔧 Test Coverage:
+      - Tested all requested UI components and functionality
+      - Verified correct table formatting in order history modal
+      - Confirmed proper navigation flow between all pages
+      - All frontend features are production-ready

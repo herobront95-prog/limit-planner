@@ -156,6 +156,14 @@ const Dashboard = () => {
                 <Link2 className="mr-2 h-4 w-4" />
                 Маппинг продуктов
               </Button>
+              <Button 
+                variant="outline"
+                className="border-green-200 hover:bg-green-50"
+                onClick={() => navigate('/global-stock')}
+              >
+                <Database className="mr-2 h-4 w-4" />
+                Загрузить общие остатки
+              </Button>
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 

@@ -813,18 +813,30 @@ async def upload_global_stock(file: UploadFile = File(...)):
         
         await db.global_stock.insert_one(upload_record)
         
-        # Also save to stock history for each store
+        # Also save to stock history for each store with change calculation
         for product, store_stocks in data.items():
             for store_name, stock in store_stocks.items():
                 # Find store by name
                 store = await db.stores.find_one({"name": store_name})
                 if store:
+                    # Get previous stock to calculate change (arrival)
+                    prev_entry = await db.stock_history.find_one(
+                        {"store_id": store["id"], "product": product},
+                        {"_id": 0, "stock": 1},
+                        sort=[("recorded_at", -1)]
+                    )
+                    
+                    prev_stock = prev_entry.get("stock", 0) if prev_entry else 0
+                    change = stock - prev_stock  # Positive = arrival, Negative = sold/used
+                    
                     history_entry = {
                         "id": str(uuid.uuid4()),
                         "store_id": store["id"],
                         "store_name": store_name,
                         "product": product,
                         "stock": stock,
+                        "prev_stock": prev_stock,
+                        "change": change,  # Difference from previous stock
                         "recorded_at": datetime.now(timezone.utc).isoformat()
                     }
                     await db.stock_history.insert_one(history_entry)

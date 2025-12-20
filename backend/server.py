@@ -890,7 +890,7 @@ async def get_store_stock_history(
     store_id: str,
     period: str = Query("week", enum=["day", "week", "month", "year"])
 ):
-    """Get stock history for a store with aggregated data per product including latest stock"""
+    """Get stock history for a store with aggregated data per product including latest stock and change"""
     store = await db.stores.find_one({"id": store_id})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
@@ -906,7 +906,7 @@ async def get_store_stock_history(
     else:  # year
         start_date = now - timedelta(days=365)
     
-    # Get unique products for this store with their latest stock
+    # Get unique products for this store with their latest stock and change
     products_data = []
     products = await db.stock_history.distinct("product", {"store_id": store_id})
     
@@ -914,13 +914,15 @@ async def get_store_stock_history(
         # Get the latest stock entry for this product
         latest_entry = await db.stock_history.find_one(
             {"store_id": store_id, "product": product},
-            {"_id": 0, "stock": 1, "recorded_at": 1},
+            {"_id": 0, "stock": 1, "prev_stock": 1, "change": 1, "recorded_at": 1},
             sort=[("recorded_at", -1)]
         )
         
         products_data.append({
             "product": product,
             "latest_stock": latest_entry.get("stock", 0) if latest_entry else 0,
+            "prev_stock": latest_entry.get("prev_stock", 0) if latest_entry else 0,
+            "change": latest_entry.get("change", 0) if latest_entry else 0,
             "last_updated": latest_entry.get("recorded_at") if latest_entry else None
         })
     

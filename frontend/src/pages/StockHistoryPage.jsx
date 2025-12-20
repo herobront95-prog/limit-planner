@@ -117,38 +117,80 @@ const StockHistoryPage = () => {
       );
     }
 
-    const values = data.map(d => d[valueKey] || d.stock || d.order || 0);
-    const maxValue = Math.max(...values, 1);
+    const values = data.map(d => d[valueKey] || 0);
+    const maxValue = Math.max(...values, 0);
     const minValue = Math.min(...values, 0);
-    const range = maxValue - minValue || 1;
+    const range = Math.max(maxValue - minValue, 1);
     const latestValue = values[values.length - 1] || 0;
+    const hasNegative = minValue < 0;
+    
+    // Calculate zero line position for charts with negative values
+    const zeroLinePercent = hasNegative ? (maxValue / range) * 100 : 0;
 
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-700">{label}</span>
-          <span className={`text-lg font-bold ${color === 'bg-blue-500' ? 'text-blue-600' : 'text-green-600'}`}>
-            {latestValue}
+          <span className={`text-lg font-bold ${
+            valueKey === 'change' 
+              ? (latestValue > 0 ? 'text-green-600' : latestValue < 0 ? 'text-red-600' : 'text-gray-500')
+              : color === 'bg-blue-500' ? 'text-blue-600' 
+              : color === 'bg-emerald-500' ? 'text-emerald-600'
+              : 'text-orange-600'
+          }`}>
+            {valueKey === 'change' && latestValue > 0 ? '+' : ''}{latestValue}
           </span>
         </div>
         <div className="relative h-24 border rounded-lg bg-gray-50 p-2">
+          {/* Zero line for change chart */}
+          {hasNegative && (
+            <div 
+              className="absolute left-0 right-0 border-t border-gray-300 border-dashed z-10"
+              style={{ top: `${zeroLinePercent}%` }}
+            />
+          )}
           <div className="absolute inset-0 p-2 flex items-end space-x-1">
             {data.map((item, index) => {
-              const value = item[valueKey] || item.stock || item.order || 0;
-              const height = ((value - minValue) / range * 100);
+              const value = item[valueKey] || 0;
+              let height, isPositive;
+              
+              if (hasNegative) {
+                // For charts with negative values
+                isPositive = value >= 0;
+                height = Math.abs(value) / range * 100;
+              } else {
+                isPositive = true;
+                height = ((value - minValue) / range * 100);
+              }
+              
+              const barColor = valueKey === 'change'
+                ? (value > 0 ? 'bg-green-500' : value < 0 ? 'bg-red-500' : 'bg-gray-300')
+                : color;
+              
               return (
                 <div
                   key={index}
-                  className="flex-1 flex flex-col items-center justify-end group relative"
-                  title={`${formatDate(item.recorded_at || item.date)}: ${value}`}
+                  className="flex-1 flex flex-col items-center group relative"
+                  style={{ 
+                    justifyContent: hasNegative && !isPositive ? 'flex-start' : 'flex-end',
+                    paddingTop: hasNegative ? `${zeroLinePercent}%` : 0,
+                    paddingBottom: hasNegative && !isPositive ? `${100 - zeroLinePercent}%` : 0
+                  }}
+                  title={`${formatDate(item.recorded_at || item.date)}: ${value > 0 ? '+' : ''}${value}`}
                 >
                   <div
-                    className={`w-full rounded-t ${color} transition-all hover:opacity-80`}
-                    style={{ height: `${Math.max(height, 8)}%`, minHeight: '4px' }}
+                    className={`w-full ${isPositive ? 'rounded-t' : 'rounded-b'} ${barColor} transition-all hover:opacity-80`}
+                    style={{ 
+                      height: `${Math.max(height, 5)}%`, 
+                      minHeight: '4px',
+                      position: hasNegative ? 'absolute' : 'relative',
+                      bottom: hasNegative && isPositive ? `${100 - zeroLinePercent}%` : 'auto',
+                      top: hasNegative && !isPositive ? `${zeroLinePercent}%` : 'auto'
+                    }}
                   />
                   {/* Tooltip on hover */}
-                  <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
-                    {formatDate(item.recorded_at || item.date)}: {value}
+                  <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">
+                    {formatDate(item.recorded_at || item.date)}: {value > 0 && valueKey === 'change' ? '+' : ''}{value}
                   </div>
                 </div>
               );

@@ -111,7 +111,11 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All Global Stock APIs working correctly. POST /api/global-stock/upload successfully uploads Excel files with format Товар|Store1|Store2. GET /api/global-stock/latest and /api/global-stock/history return proper data. Successfully uploaded test file with 4 products and 3 stores."
 
   - task: "Stock History API"
     implemented: true
@@ -119,7 +123,11 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Stock History APIs fully functional. GET /api/stores/{store_id}/stock-history works with all period filters (day/week/month/year). GET /api/stores/{store_id}/stock-history/{product} returns detailed stock and order history for specific products. All endpoints return proper data structure."
 
   - task: "Order History API"
     implemented: true
@@ -127,7 +135,11 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Order History APIs working perfectly. GET /api/stores/{store_id}/orders lists all orders with item counts. GET /api/stores/{store_id}/orders/{order_id} returns detailed order information. Successfully tested with real order data."
 
   - task: "Order Download with Formatting"
     implemented: true
@@ -135,7 +147,23 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Order download formatting is PERFECT. GET /api/stores/{store_id}/orders/{order_id}/download returns Excel with exactly 2 columns: store_name (not 'Товар') and 'Заказ'. Bold formatting applied correctly. File downloads with proper UTF-8 encoding."
+
+  - task: "Process with Global Stock"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Global Stock processing works flawlessly. POST /api/process-text with use_global_stock=true successfully processes orders from uploaded global stock data. Returns properly formatted Excel file. Integration between global stock and order processing is seamless."
 
 frontend:
   - task: "Global Stock Page"

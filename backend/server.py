@@ -555,6 +555,25 @@ async def process_text_data(request: ProcessTextRequest):
                 detail="Не найдено товаров для заказа. Проверьте лимиты и названия товаров."
             )
         
+        # Save order to history
+        order_items = []
+        for _, row in df.iterrows():
+            order_items.append({
+                "product": row["Товар"],
+                "stock": float(row["Остаток"]),
+                "order": float(row["Заказ"]),
+                "limit": float(row["Лимиты"])
+            })
+        
+        order_history = {
+            "id": str(uuid.uuid4()),
+            "store_id": store["id"],
+            "store_name": store["name"],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "items": order_items
+        }
+        await db.order_history.insert_one(order_history)
+        
         # Generate Excel response
         output = io.BytesIO()
         df.to_excel(output, index=False, engine='openpyxl')

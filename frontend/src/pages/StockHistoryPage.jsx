@@ -245,15 +245,17 @@ const StockHistoryPage = () => {
                   <TableHeader>
                     <TableRow className="bg-gray-50">
                       <TableHead className="font-semibold">Товар</TableHead>
-                      <TableHead className="font-semibold w-32 text-right">Остаток</TableHead>
-                      <TableHead className="font-semibold w-40 text-right">Обновлено</TableHead>
-                      <TableHead className="w-20"></TableHead>
+                      <TableHead className="font-semibold w-28 text-right">Остаток</TableHead>
+                      <TableHead className="font-semibold w-28 text-right">Изменение</TableHead>
+                      <TableHead className="font-semibold w-36 text-right">Обновлено</TableHead>
+                      <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredProducts.map((item, index) => {
                       const productName = typeof item === 'string' ? item : item.product;
                       const stock = typeof item === 'string' ? '—' : item.latest_stock;
+                      const change = typeof item === 'string' ? 0 : (item.change || 0);
                       const lastUpdated = typeof item === 'string' ? null : item.last_updated;
                       
                       return (
@@ -267,6 +269,15 @@ const StockHistoryPage = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <span className="font-bold text-lg text-blue-600">{stock}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {change !== 0 ? (
+                              <span className={`font-bold text-lg ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {change > 0 ? '+' : ''}{change}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">0</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right text-sm text-gray-500">
                             {formatDateTime(lastUpdated)}

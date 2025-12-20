@@ -650,6 +650,23 @@ const StoreEditor = () => {
                 </TabsContent>
               </Tabs>
 
+              {/* Use Global Stock Checkbox */}
+              {hasGlobalStock && (
+                <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <Checkbox
+                    id="use-global-stock"
+                    checked={useGlobalStock}
+                    onCheckedChange={setUseGlobalStock}
+                  />
+                  <Label htmlFor="use-global-stock" className="cursor-pointer text-sm">
+                    <div className="flex items-center">
+                      <Database className="h-4 w-4 mr-2 text-green-600" />
+                      Загрузить из общих остатков
+                    </div>
+                  </Label>
+                </div>
+              )}
+
               {filterExpressions.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Активные фильтры:</Label>
@@ -674,7 +691,7 @@ const StoreEditor = () => {
               <Button
                 data-testid="process-file-btn"
                 onClick={handleProcessFile}
-                disabled={(uploadMethod === 'file' && !selectedFile) || (uploadMethod === 'paste' && !pastedData.trim()) || processing}
+                disabled={(!useGlobalStock && uploadMethod === 'file' && !selectedFile) || (!useGlobalStock && uploadMethod === 'paste' && !pastedData.trim()) || processing}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 {processing ? (

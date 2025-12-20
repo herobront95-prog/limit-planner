@@ -328,9 +328,15 @@ const StockHistoryPage = () => {
               valueKey="stock"
             />
             <SimpleChart
+              data={productHistory?.stock_history || []}
+              label="Изменение (приход/расход)"
+              color="bg-emerald-500"
+              valueKey="change"
+            />
+            <SimpleChart
               data={productHistory?.order_history || []}
               label="Заказы"
-              color="bg-green-500"
+              color="bg-orange-500"
               valueKey="order"
             />
           </div>

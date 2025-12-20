@@ -349,13 +349,18 @@ const StoreEditor = () => {
 
   const handleProcessFile = async () => {
     // Check which method is being used
-    if (uploadMethod === 'file' && !selectedFile) {
+    if (uploadMethod === 'file' && !selectedFile && !useGlobalStock) {
       toast.error('Выберите файл с остатками');
       return;
     }
 
-    if (uploadMethod === 'paste' && !pastedData.trim()) {
+    if (uploadMethod === 'paste' && !pastedData.trim() && !useGlobalStock) {
       toast.error('Вставьте данные остатков');
+      return;
+    }
+
+    if (useGlobalStock && !hasGlobalStock) {
+      toast.error('Общие остатки не загружены');
       return;
     }
 
@@ -364,7 +369,22 @@ const StoreEditor = () => {
     try {
       let response;
 
-      if (uploadMethod === 'file') {
+      if (useGlobalStock) {
+        // Use global stock
+        toast.info('Загрузка из общих остатков...');
+        response = await axios.post(
+          `${API}/process-text`,
+          {
+            store_id: storeId,
+            data: [],
+            filter_expressions: filterExpressions,
+            use_global_stock: true,
+          },
+          {
+            responseType: 'blob',
+          }
+        );
+      } else if (uploadMethod === 'file') {
         // Original file upload method
         const formData = new FormData();
         formData.append('file', selectedFile);

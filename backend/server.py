@@ -710,6 +710,291 @@ async def process_order(
         logging.error(f"Processing error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ==================== GLOBAL STOCK API ====================
+
+@api_router.post("/global-stock/upload")
+async def upload_global_stock(file: UploadFile = File(...)):
+    """Upload global stock Excel file with columns: Товар, Store1, Store2, ..."""
+    try:
+        contents = await file.read()
+        df = pd.read_excel(io.BytesIO(contents))
+        
+        # First column should be product name
+        if len(df.columns) < 2:
+            raise HTTPException(status_code=400, detail="File must have at least 2 columns: Товар and at least one store")
+        
+        product_col = df.columns[0]
+        store_columns = list(df.columns[1:])
+        
+        # Build data dict
+        data = {}
+        for _, row in df.iterrows():
+            product = str(row[product_col]).strip()
+            if not product or product == 'nan':
+                continue
+            
+            product_data = {}
+            for store_col in store_columns:
+                stock = row[store_col]
+                if pd.notna(stock):
+                    try:
+                        product_data[str(store_col)] = float(stock)
+                    except:
+                        product_data[str(store_col)] = 0
+                else:
+                    product_data[str(store_col)] = 0
+            
+            data[product] = product_data
+        
+        # Save to database
+        upload_record = {
+            "id": str(uuid.uuid4()),
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "store_columns": store_columns,
+            "data": data
+        }
+        
+        await db.global_stock.insert_one(upload_record)
+        
+        # Also save to stock history for each store
+        for product, store_stocks in data.items():
+            for store_name, stock in store_stocks.items():
+                # Find store by name
+                store = await db.stores.find_one({"name": store_name})
+                if store:
+                    history_entry = {
+                        "id": str(uuid.uuid4()),
+                        "store_id": store["id"],
+                        "store_name": store_name,
+                        "product": product,
+                        "stock": stock,
+                        "recorded_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.stock_history.insert_one(history_entry)
+        
+        return {
+            "message": "Global stock uploaded successfully",
+            "products_count": len(data),
+            "stores_found": store_columns
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Global stock upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/global-stock/latest")
+async def get_latest_global_stock():
+    """Get the most recent global stock upload"""
+    record = await db.global_stock.find_one(
+        {}, 
+        {"_id": 0},
+        sort=[("uploaded_at", -1)]
+    )
+    if not record:
+        return None
+    return record
+
+@api_router.get("/global-stock/history")
+async def get_global_stock_history():
+    """Get history of all global stock uploads (without full data)"""
+    records = await db.global_stock.find(
+        {},
+        {"_id": 0, "id": 1, "uploaded_at": 1, "store_columns": 1}
+    ).sort("uploaded_at", -1).to_list(100)
+    return records
+
+@api_router.get("/global-stock/{stock_id}")
+async def get_global_stock_by_id(stock_id: str):
+    """Get specific global stock upload by ID"""
+    record = await db.global_stock.find_one({"id": stock_id}, {"_id": 0})
+    if not record:
+        raise HTTPException(status_code=404, detail="Stock record not found")
+    return record
+
+
+# ==================== STOCK HISTORY API ====================
+
+@api_router.get("/stores/{store_id}/stock-history")
+async def get_store_stock_history(
+    store_id: str,
+    period: str = Query("week", enum=["day", "week", "month", "year"])
+):
+    """Get stock history for a store with aggregated data per product"""
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    # Calculate date range
+    now = datetime.now(timezone.utc)
+    if period == "day":
+        start_date = now - timedelta(days=1)
+    elif period == "week":
+        start_date = now - timedelta(weeks=1)
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+    else:  # year
+        start_date = now - timedelta(days=365)
+    
+    # Get unique products for this store
+    products = await db.stock_history.distinct("product", {"store_id": store_id})
+    
+    return {
+        "store_name": store["name"],
+        "period": period,
+        "products": products,
+        "start_date": start_date.isoformat(),
+        "end_date": now.isoformat()
+    }
+
+@api_router.get("/stores/{store_id}/stock-history/{product}")
+async def get_product_stock_history(
+    store_id: str,
+    product: str,
+    period: str = Query("week", enum=["day", "week", "month", "year"])
+):
+    """Get stock history for a specific product in a store"""
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    # Calculate date range
+    now = datetime.now(timezone.utc)
+    if period == "day":
+        start_date = now - timedelta(days=1)
+    elif period == "week":
+        start_date = now - timedelta(weeks=1)
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+    else:  # year
+        start_date = now - timedelta(days=365)
+    
+    from urllib.parse import unquote
+    product_decoded = unquote(product)
+    
+    # Get stock history
+    stock_records = await db.stock_history.find(
+        {
+            "store_id": store_id,
+            "product": product_decoded,
+            "recorded_at": {"$gte": start_date.isoformat()}
+        },
+        {"_id": 0}
+    ).sort("recorded_at", 1).to_list(1000)
+    
+    # Get order history for this product
+    order_records = await db.order_history.find(
+        {
+            "store_id": store_id,
+            "created_at": {"$gte": start_date.isoformat()}
+        },
+        {"_id": 0, "created_at": 1, "items": 1}
+    ).sort("created_at", 1).to_list(1000)
+    
+    # Extract order data for this product
+    orders_data = []
+    for order in order_records:
+        for item in order.get("items", []):
+            if item.get("product") == product_decoded:
+                orders_data.append({
+                    "date": order["created_at"],
+                    "order": item.get("order", 0)
+                })
+                break
+    
+    return {
+        "product": product_decoded,
+        "store_name": store["name"],
+        "period": period,
+        "stock_history": stock_records,
+        "order_history": orders_data
+    }
+
+
+# ==================== ORDER HISTORY API ====================
+
+@api_router.get("/stores/{store_id}/orders")
+async def get_store_orders(store_id: str):
+    """Get order history for a store"""
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    orders = await db.order_history.find(
+        {"store_id": store_id},
+        {"_id": 0, "id": 1, "store_name": 1, "created_at": 1, "items": 1}
+    ).sort("created_at", -1).to_list(1000)
+    
+    # Add items count to each order
+    for order in orders:
+        order["items_count"] = len(order.get("items", []))
+    
+    return orders
+
+@api_router.get("/stores/{store_id}/orders/{order_id}")
+async def get_order_details(store_id: str, order_id: str):
+    """Get details of a specific order"""
+    order = await db.order_history.find_one(
+        {"store_id": store_id, "id": order_id},
+        {"_id": 0}
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
+
+@api_router.get("/stores/{store_id}/orders/{order_id}/download")
+async def download_order(store_id: str, order_id: str):
+    """Download order as Excel file with formatted output"""
+    order = await db.order_history.find_one(
+        {"store_id": store_id, "id": order_id},
+        {"_id": 0}
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    store = await db.stores.find_one({"id": store_id})
+    store_name = store["name"] if store else "Заказ"
+    
+    # Create DataFrame with only store_name and order columns
+    items = order.get("items", [])
+    df = pd.DataFrame([
+        {store_name: item.get("product", ""), "Заказ": item.get("order", 0)}
+        for item in items
+    ])
+    
+    # Generate Excel with bold formatting
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Заказ')
+        
+        # Apply bold formatting
+        workbook = writer.book
+        worksheet = writer.sheets['Заказ']
+        from openpyxl.styles import Font
+        bold_font = Font(bold=True)
+        
+        for row in worksheet.iter_rows():
+            for cell in row:
+                cell.font = bold_font
+    
+    output.seek(0)
+    
+    from urllib.parse import quote
+    filename = f"{store_name}.xlsx"
+    encoded_filename = quote(filename)
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
+
+
 app.include_router(api_router)
 
 app.add_middleware(

@@ -445,8 +445,9 @@ class TextDataItem(BaseModel):
 
 class ProcessTextRequest(BaseModel):
     store_id: str
-    data: List[TextDataItem]
+    data: List[TextDataItem] = Field(default_factory=list)
     filter_expressions: List[str] = Field(default_factory=list)
+    use_global_stock: bool = False  # New: use global stock instead of provided data
 
 @api_router.post("/process-text")
 async def process_text_data(request: ProcessTextRequest):
@@ -458,11 +459,35 @@ async def process_text_data(request: ProcessTextRequest):
         
         limits_dict = {item['product']: item['limit'] for item in store.get('limits', [])}
         
-        # Convert text data to DataFrame
-        data_dict = {
-            'Товар': [item.product for item in request.data],
-            'Остаток': [item.stock for item in request.data]
-        }
+        # Get data either from request or from global stock
+        if request.use_global_stock:
+            # Load from global stock
+            global_stock = await db.global_stock.find_one({}, sort=[("uploaded_at", -1)])
+            if not global_stock:
+                raise HTTPException(status_code=400, detail="Нет загруженных общих остатков")
+            
+            store_name = store["name"]
+            stock_data = global_stock.get("data", {})
+            
+            data_list = []
+            for product, stores in stock_data.items():
+                stock = stores.get(store_name, 0)
+                data_list.append({"product": product, "stock": stock})
+            
+            if not data_list:
+                raise HTTPException(status_code=400, detail=f"Нет данных для точки '{store_name}' в общих остатках")
+            
+            data_dict = {
+                'Товар': [item["product"] for item in data_list],
+                'Остаток': [item["stock"] for item in data_list]
+            }
+        else:
+            # Use provided data
+            data_dict = {
+                'Товар': [item.product for item in request.data],
+                'Остаток': [item.stock for item in request.data]
+            }
+        
         df = pd.DataFrame(data_dict)
         
         # Process data (same as Excel processing)
@@ -471,6 +496,18 @@ async def process_text_data(request: ProcessTextRequest):
         
         # Apply product mappings (merge synonyms and sum stock)
         df = await apply_product_mappings(df)
+        
+        # Save stock history
+        for _, row in df.iterrows():
+            history_entry = {
+                "id": str(uuid.uuid4()),
+                "store_id": store["id"],
+                "store_name": store["name"],
+                "product": row["Товар"],
+                "stock": row["Остаток"],
+                "recorded_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.stock_history.insert_one(history_entry)
         
         # Filter products with limits
         def should_keep(product_name):

@@ -201,13 +201,14 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "2.0"
-  test_sequence: 2
+  test_sequence: 3
 
 test_plan:
   current_focus:
     - "Global Stock Upload and Processing"
     - "Order History View and Download"
     - "Stock History with Charts"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
@@ -225,3 +226,30 @@ agent_communication:
       b) Create order using "Из общих остатков" checkbox
       c) View order history and download formatted file
       d) View stock history with charts
+
+  - agent: "testing"
+    message: |
+      🎉 COMPREHENSIVE BACKEND TESTING COMPLETED - ALL TESTS PASSED!
+      
+      ✅ Global Stock & History Features: 7/7 tests PASSED
+      - Global Stock Upload API: Excel upload with proper format validation ✅
+      - Global Stock Retrieval: Latest and history endpoints working ✅
+      - Process with Global Stock: Order processing from global stock ✅
+      - Order History API: List orders and get details ✅
+      - Order Download: Perfect formatting (store_name + 'Заказ' columns, bold) ✅
+      - Stock History API: All period filters (day/week/month/year) working ✅
+      - Product Stock History: Detailed product tracking ✅
+      
+      ✅ Regression Testing: 5/5 tests PASSED
+      - Product Mappings CRUD operations ✅
+      - Store operations and limits management ✅
+      - Product mapping integration ✅
+      - Filters API ✅
+      - API health and connectivity ✅
+      
+      🔧 Test Coverage:
+      - Created comprehensive test suite: /app/backend/tests/test_global_stock_history.py
+      - Tested all requested API endpoints with real data
+      - Verified Excel formatting requirements exactly as specified
+      - Confirmed UTF-8 encoding and proper file downloads
+      - All backend APIs are production-ready

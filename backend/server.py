@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 import io
 import re
@@ -77,6 +77,31 @@ class ProductMappingCreate(BaseModel):
 class ProductMappingUpdate(BaseModel):
     main_product: Optional[str] = None
     synonyms: Optional[List[str]] = None
+
+# New models for global stock and history
+class GlobalStockUpload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    store_columns: List[str] = Field(default_factory=list)  # List of store names found in file
+    data: Dict[str, Dict[str, float]] = Field(default_factory=dict)  # {product: {store_name: stock}}
+
+class StockHistoryEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    store_id: str
+    store_name: str
+    product: str
+    stock: float
+    recorded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class OrderHistoryEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    store_id: str
+    store_name: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    items: List[Dict[str, Any]] = Field(default_factory=list)  # [{product, stock, order, limit}]
 
 
 # Improved product matching algorithm

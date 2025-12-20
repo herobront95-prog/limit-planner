@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -44,6 +45,9 @@ import {
   Globe,
   Edit2,
   Check,
+  Package,
+  History,
+  Database,
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -52,6 +56,7 @@ const StoreEditor = () => {
   const { storeId } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);

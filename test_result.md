@@ -172,7 +172,11 @@ frontend:
     file: "/app/frontend/src/pages/GlobalStockPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Global Stock page fully functional. Upload area with drag-drop zone visible, format help section shows correct Excel format (Товар|Store1|Store2), history table displays properly, back button navigation works correctly. Page loads at /global-stock route as expected."
 
   - task: "Order History Page"
     implemented: true
@@ -180,7 +184,11 @@ frontend:
     file: "/app/frontend/src/pages/OrderHistoryPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Order History page working perfectly. Page loads with orders list, eye icon opens modal with correct table structure. CRITICAL: First column correctly named as store name '9ка' (not 'Товар'), second column named 'Заказ', bold text present in table cells, 'Сохранить' button found in modal. Navigation works correctly."
 
   - task: "Stock History Page with Charts"
     implemented: true
@@ -188,7 +196,11 @@ frontend:
     file: "/app/frontend/src/pages/StockHistoryPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Stock History page functional. Period selector (День/Неделя/Месяц/Год) found, search input for filtering products visible, page loads correctly at /store/{id}/stock route. Chart functionality available for products with Остатки and Заказы graphs, period selector in chart dialog present."
 
   - task: "Store Editor - Global Stock Checkbox"
     implemented: true
@@ -196,7 +208,11 @@ frontend:
     file: "/app/frontend/src/pages/StoreEditor.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Store Editor new features working correctly. 'Остатки' button (blue outline) and 'История заявок' button (green outline) both present in header. 'Загрузить из общих остатков' checkbox appears when global stock is available. All navigation between store editor, order history, and stock history pages works smoothly."
 
 metadata:
   created_by: "main_agent"

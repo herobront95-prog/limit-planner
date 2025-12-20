@@ -906,25 +906,29 @@ async def get_store_stock_history(
     else:  # year
         start_date = now - timedelta(days=365)
     
-    # Get unique products for this store with their latest stock and change
-    products_data = []
-    products = await db.stock_history.distinct("product", {"store_id": store_id})
+    # Use aggregation pipeline to get latest entry for each product efficiently
+    pipeline = [
+        {"$match": {"store_id": store_id}},
+        {"$sort": {"recorded_at": -1}},
+        {"$group": {
+            "_id": "$product",
+            "latest_stock": {"$first": "$stock"},
+            "prev_stock": {"$first": {"$ifNull": ["$prev_stock", 0]}},
+            "change": {"$first": {"$ifNull": ["$change", 0]}},
+            "last_updated": {"$first": "$recorded_at"}
+        }},
+        {"$project": {
+            "_id": 0,
+            "product": "$_id",
+            "latest_stock": 1,
+            "prev_stock": 1,
+            "change": 1,
+            "last_updated": 1
+        }},
+        {"$sort": {"product": 1}}
+    ]
     
-    for product in products:
-        # Get the latest stock entry for this product
-        latest_entry = await db.stock_history.find_one(
-            {"store_id": store_id, "product": product},
-            {"_id": 0, "stock": 1, "prev_stock": 1, "change": 1, "recorded_at": 1},
-            sort=[("recorded_at", -1)]
-        )
-        
-        products_data.append({
-            "product": product,
-            "latest_stock": latest_entry.get("stock", 0) if latest_entry else 0,
-            "prev_stock": latest_entry.get("prev_stock", 0) if latest_entry else 0,
-            "change": latest_entry.get("change", 0) if latest_entry else 0,
-            "last_updated": latest_entry.get("recorded_at") if latest_entry else None
-        })
+    products_data = await db.stock_history.aggregate(pipeline).to_list(10000)
     
     return {
         "store_name": store["name"],

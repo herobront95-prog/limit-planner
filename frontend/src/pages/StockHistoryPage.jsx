@@ -22,9 +22,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { ArrowLeft, Package, TrendingUp, Search } from 'lucide-react';
+import { ArrowLeft, Package, TrendingUp, Search, BarChart3 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -60,12 +68,12 @@ const StockHistoryPage = () => {
     }
   };
 
-  const handleViewProduct = async (product) => {
+  const handleViewProduct = async (productName) => {
     try {
       const response = await axios.get(
-        `${API}/stores/${storeId}/stock-history/${encodeURIComponent(product)}?period=${period}`
+        `${API}/stores/${storeId}/stock-history/${encodeURIComponent(productName)}?period=${period}`
       );
-      setSelectedProduct(product);
+      setSelectedProduct(productName);
       setProductHistory(response.data);
       setChartDialogOpen(true);
     } catch (error) {
@@ -82,38 +90,66 @@ const StockHistoryPage = () => {
     });
   };
 
-  const filteredProducts = products.filter(p =>
-    p.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '—';
+    const date = new Date(dateStr);
+    return date.toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-  // Simple chart component
-  const SimpleChart = ({ data, label, color }) => {
+  const filteredProducts = products.filter(p => {
+    const productName = typeof p === 'string' ? p : p.product;
+    return productName?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  // Simple chart component with better visualization
+  const SimpleChart = ({ data, label, color, valueKey }) => {
     if (!data || data.length === 0) {
-      return <div className="text-center text-gray-500 py-4">Нет данных</div>;
+      return (
+        <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
+          <BarChart3 className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          <p className="text-sm">Нет данных за выбранный период</p>
+        </div>
+      );
     }
 
-    const values = data.map(d => d.stock || d.order || 0);
+    const values = data.map(d => d[valueKey] || d.stock || d.order || 0);
     const maxValue = Math.max(...values, 1);
     const minValue = Math.min(...values, 0);
     const range = maxValue - minValue || 1;
+    const latestValue = values[values.length - 1] || 0;
 
     return (
       <div className="space-y-2">
-        <div className="text-sm font-medium text-gray-700">{label}</div>
-        <div className="relative h-32 border rounded-lg bg-gray-50 p-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700">{label}</span>
+          <span className={`text-lg font-bold ${color === 'bg-blue-500' ? 'text-blue-600' : 'text-green-600'}`}>
+            {latestValue}
+          </span>
+        </div>
+        <div className="relative h-24 border rounded-lg bg-gray-50 p-2">
           <div className="absolute inset-0 p-2 flex items-end space-x-1">
             {data.map((item, index) => {
-              const height = ((item.stock || item.order || 0) - minValue) / range * 100;
+              const value = item[valueKey] || item.stock || item.order || 0;
+              const height = ((value - minValue) / range * 100);
               return (
                 <div
                   key={index}
-                  className="flex-1 flex flex-col items-center justify-end"
-                  title={`${formatDate(item.recorded_at || item.date)}: ${item.stock || item.order || 0}`}
+                  className="flex-1 flex flex-col items-center justify-end group relative"
+                  title={`${formatDate(item.recorded_at || item.date)}: ${value}`}
                 >
                   <div
-                    className={`w-full rounded-t ${color}`}
-                    style={{ height: `${Math.max(height, 5)}%` }}
+                    className={`w-full rounded-t ${color} transition-all hover:opacity-80`}
+                    style={{ height: `${Math.max(height, 8)}%`, minHeight: '4px' }}
                   />
+                  {/* Tooltip on hover */}
+                  <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                    {formatDate(item.recorded_at || item.date)}: {value}
+                  </div>
                 </div>
               );
             })}
@@ -193,7 +229,7 @@ const StockHistoryPage = () => {
               </div>
             </CardTitle>
             <CardDescription>
-              Нажмите на товар для просмотра графика
+              Нажмите на товар для просмотра графика движения
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -204,35 +240,64 @@ const StockHistoryPage = () => {
                 <p className="text-gray-500">Данные появятся после загрузки остатков или формирования заявок</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredProducts.map((product) => (
-                  <Card
-                    key={product}
-                    className="cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
-                    onClick={() => handleViewProduct(product)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium truncate flex-1 mr-2">{product}</span>
-                        <TrendingUp className="h-4 w-4 text-indigo-500 flex-shrink-0" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="rounded-lg border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Товар</TableHead>
+                      <TableHead className="font-semibold w-32 text-right">Остаток</TableHead>
+                      <TableHead className="font-semibold w-40 text-right">Обновлено</TableHead>
+                      <TableHead className="w-20"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProducts.map((item, index) => {
+                      const productName = typeof item === 'string' ? item : item.product;
+                      const stock = typeof item === 'string' ? '—' : item.latest_stock;
+                      const lastUpdated = typeof item === 'string' ? null : item.last_updated;
+                      
+                      return (
+                        <TableRow 
+                          key={index}
+                          className="cursor-pointer hover:bg-indigo-50 transition-colors"
+                          onClick={() => handleViewProduct(productName)}
+                        >
+                          <TableCell className="font-medium">
+                            <span className="line-clamp-2">{productName}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-bold text-lg text-blue-600">{stock}</span>
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-gray-500">
+                            {formatDateTime(lastUpdated)}
+                          </TableCell>
+                          <TableCell>
+                            <TrendingUp className="h-4 w-4 text-indigo-500" />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Product Chart Dialog */}
+      {/* Product Chart Dialog - Fixed width and title overflow */}
       <Dialog open={chartDialogOpen} onOpenChange={setChartDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span className="truncate pr-4">{selectedProduct}</span>
-              <Select value={period} onValueChange={(v) => { setPeriod(v); handleViewProduct(selectedProduct); }}>
-                <SelectTrigger className="w-28">
+        <DialogContent className="max-w-2xl w-[95vw]">
+          <DialogHeader className="pr-8">
+            <DialogTitle className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-500 mb-1">История товара</p>
+                <p className="font-bold text-base break-words line-clamp-3" title={selectedProduct}>
+                  {selectedProduct}
+                </p>
+              </div>
+              <Select value={period} onValueChange={(v) => { setPeriod(v); if (selectedProduct) handleViewProduct(selectedProduct); }}>
+                <SelectTrigger className="w-28 flex-shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,11 +314,13 @@ const StockHistoryPage = () => {
               data={productHistory?.stock_history || []}
               label="Остатки"
               color="bg-blue-500"
+              valueKey="stock"
             />
             <SimpleChart
               data={productHistory?.order_history || []}
               label="Заказы"
               color="bg-green-500"
+              valueKey="order"
             />
           </div>
         </DialogContent>

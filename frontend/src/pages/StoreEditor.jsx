@@ -536,6 +536,22 @@ const StoreEditor = () => {
             </div>
             <div className="flex space-x-3">
               <Button
+                variant="outline"
+                onClick={() => navigate(`/store/${storeId}/stock`)}
+                className="border-blue-200 hover:bg-blue-50"
+              >
+                <Package className="mr-2 h-4 w-4" />
+                Остатки
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/store/${storeId}/orders`)}
+                className="border-green-200 hover:bg-green-50"
+              >
+                <History className="mr-2 h-4 w-4" />
+                История заявок
+              </Button>
+              <Button
                 data-testid="open-filters-btn"
                 onClick={() => setFiltersDialogOpen(true)}
                 variant="outline"

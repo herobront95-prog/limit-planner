@@ -76,12 +76,24 @@ const StoreEditor = () => {
   const [editingLimitName, setEditingLimitName] = useState(null);
   const [editNameValue, setEditNameValue] = useState('');
   const [pastedData, setPastedData] = useState('');
-  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'paste'
+  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'paste' or 'global'
+  const [useGlobalStock, setUseGlobalStock] = useState(false);
+  const [hasGlobalStock, setHasGlobalStock] = useState(false);
 
   useEffect(() => {
     fetchStore();
     fetchFilters();
+    checkGlobalStock();
   }, [storeId]);
+
+  const checkGlobalStock = async () => {
+    try {
+      const response = await axios.get(`${API}/global-stock/latest`);
+      setHasGlobalStock(!!response.data);
+    } catch (error) {
+      setHasGlobalStock(false);
+    }
+  };
 
   const fetchStore = async () => {
     try {

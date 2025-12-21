@@ -630,12 +630,12 @@ const StoreEditor = () => {
 
                 <TabsContent value="paste" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>Вставьте данные из Excel/таблицы:</Label>
-                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-800">
-                      💡 Скопируйте 2 колонки из Excel (Товар и Остаток) и вставьте сюда
+                    <Label>Заявка от продавца (будет добавлена в конец):</Label>
+                    <div className="bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-800">
+                      📝 Вставьте текст от продавца — каждая строка будет добавлена в конец заявки без фильтров и лимитов
                     </div>
                     <Textarea
-                      placeholder={"Пример:\nТовар1\t5\nТовар2\t10\nТовар3\t2"}
+                      placeholder={"Пример:\nТовар который нужно заказать\nЕщё один товар\nИ ещё"}
                       value={pastedData}
                       onChange={(e) => setPastedData(e.target.value)}
                       className="min-h-[200px] font-mono text-xs"

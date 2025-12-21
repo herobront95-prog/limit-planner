@@ -796,9 +796,24 @@ async def process_order(
 # ==================== GLOBAL STOCK API ====================
 
 @api_router.post("/global-stock/upload")
-async def upload_global_stock(file: UploadFile = File(...)):
+async def upload_global_stock(
+    file: UploadFile = File(...),
+    stock_date: str = Query(None, description="Date for the stock in ISO format (YYYY-MM-DD). Defaults to today.")
+):
     """Upload global stock Excel file with columns: Товар, Store1, Store2, ..."""
     try:
+        # Parse stock date or use current date
+        if stock_date:
+            try:
+                # Parse date and set time to end of day
+                parsed_date = datetime.fromisoformat(stock_date.replace('Z', '+00:00'))
+                if parsed_date.tzinfo is None:
+                    parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+            except:
+                parsed_date = datetime.now(timezone.utc)
+        else:
+            parsed_date = datetime.now(timezone.utc)
+        
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents))
         

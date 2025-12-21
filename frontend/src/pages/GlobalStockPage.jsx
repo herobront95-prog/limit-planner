@@ -70,16 +70,29 @@ const GlobalStockPage = () => {
     formData.append('file', file);
 
     try {
-      const response = await axios.post(`${API}/global-stock/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      toast.success(`Загружено ${response.data.products_count} товаров для ${response.data.stores_found.length} точек`);
+      // Pass selected date as query parameter
+      const response = await axios.post(
+        `${API}/global-stock/upload?stock_date=${stockDate}`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      toast.success(`Загружено ${response.data.products_count} товаров для ${response.data.stores_found.length} точек (дата: ${formatDateShort(stockDate)})`);
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Ошибка загрузки файла');
     } finally {
       setUploading(false);
     }
+  };
+
+  const formatDateShort = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   const handleDragOver = (e) => {

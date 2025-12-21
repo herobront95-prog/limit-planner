@@ -409,18 +409,10 @@ const StoreEditor = () => {
           }
         );
       } else {
-
-        response = await axios.post(
-          `${API}/process-text`,
-          {
-            store_id: storeId,
-            data: parsedData,
-            filter_expressions: filterExpressions,
-          },
-          {
-            responseType: 'blob',
-          }
-        );
+        // This shouldn't happen with current flow
+        toast.error('Выберите метод загрузки');
+        setProcessing(false);
+        return;
       }
 
       // Create blob and download file

@@ -166,6 +166,24 @@ const GlobalStockPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Date Picker */}
+              <div className="space-y-2">
+                <Label htmlFor="stock-date" className="flex items-center text-sm font-medium">
+                  <Calendar className="h-4 w-4 mr-2 text-indigo-600" />
+                  Дата остатков
+                </Label>
+                <Input
+                  id="stock-date"
+                  type="date"
+                  value={stockDate}
+                  onChange={(e) => setStockDate(e.target.value)}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500">
+                  Выберите дату для загружаемых остатков (по умолчанию — сегодня)
+                </p>
+              </div>
+
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}

@@ -556,14 +556,38 @@ async def process_text_data(request: ProcessTextRequest):
                 detail="Не найдено товаров для заказа. Проверьте лимиты и названия товаров."
             )
         
+        # Append seller request text at the end (no filters/limits applied)
+        seller_items = []
+        if request.seller_request and request.seller_request.strip():
+            seller_lines = [line.strip() for line in request.seller_request.strip().split('\n') if line.strip()]
+            for line in seller_lines:
+                # Add seller request as new rows with empty numeric values
+                new_row = pd.DataFrame([{
+                    'Товар': line,
+                    'Остаток': 0,
+                    'Лимиты': 0,
+                    'Заказ': 0
+                }])
+                df = pd.concat([df, new_row], ignore_index=True)
+                seller_items.append({
+                    "product": line,
+                    "stock": 0,
+                    "order": 0,
+                    "limit": 0,
+                    "is_seller_request": True
+                })
+        
         # Save order to history
         order_items = []
         for _, row in df.iterrows():
+            # Check if this is a seller request item
+            is_seller = row["Товар"] in [item["product"] for item in seller_items]
             order_items.append({
                 "product": row["Товар"],
                 "stock": float(row["Остаток"]),
                 "order": float(row["Заказ"]),
-                "limit": float(row["Лимиты"])
+                "limit": float(row["Лимиты"]),
+                "is_seller_request": is_seller
             })
         
         order_history = {
@@ -571,7 +595,8 @@ async def process_text_data(request: ProcessTextRequest):
             "store_id": store["id"],
             "store_name": store["name"],
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "items": order_items
+            "items": order_items,
+            "seller_request": request.seller_request if request.seller_request else None
         }
         await db.order_history.insert_one(order_history)
         

@@ -354,13 +354,15 @@ const StoreEditor = () => {
       return;
     }
 
-    if (uploadMethod === 'paste' && !pastedData.trim() && !useGlobalStock) {
-      toast.error('Вставьте данные остатков');
+    // For global stock, seller request text is optional
+    if (useGlobalStock && !hasGlobalStock) {
+      toast.error('Общие остатки не загружены');
       return;
     }
 
-    if (useGlobalStock && !hasGlobalStock) {
-      toast.error('Общие остатки не загружены');
+    // If not using global stock and on paste tab, we need data
+    if (!useGlobalStock && uploadMethod === 'paste') {
+      toast.error('Включите галочку "Из общих остатков" для формирования заказа');
       return;
     }
 
@@ -370,8 +372,14 @@ const StoreEditor = () => {
       let response;
 
       if (useGlobalStock) {
-        // Use global stock
-        toast.info('Загрузка из общих остатков...');
+        // Use global stock + optional seller request
+        const sellerText = pastedData.trim();
+        if (sellerText) {
+          toast.info(`Формирование заказа + ${sellerText.split('\n').filter(l => l.trim()).length} позиций от продавца...`);
+        } else {
+          toast.info('Загрузка из общих остатков...');
+        }
+        
         response = await axios.post(
           `${API}/process-text`,
           {
@@ -379,6 +387,7 @@ const StoreEditor = () => {
             data: [],
             filter_expressions: filterExpressions,
             use_global_stock: true,
+            seller_request: sellerText,  // Add seller request text
           },
           {
             responseType: 'blob',
@@ -400,24 +409,6 @@ const StoreEditor = () => {
           }
         );
       } else {
-        // Paste method - send as JSON
-        const parsedData = parsePastedData(pastedData);
-        
-        if (parsedData.length === 0) {
-          toast.error('Не найдено корректных данных. Формат: Товар [TAB] Остаток');
-          setProcessing(false);
-          return;
-        }
-
-        const totalLines = pastedData.split('\n').filter(l => l.trim()).length;
-        const parsed = parsedData.length;
-        const skipped = totalLines - parsed;
-        
-        if (skipped > 0) {
-          toast.info(`Обработка: ${parsed} позиций (пропущено: ${skipped})`);
-        } else {
-          toast.info(`Обработка ${parsed} позиций...`);
-        }
 
         response = await axios.post(
           `${API}/process-text`,

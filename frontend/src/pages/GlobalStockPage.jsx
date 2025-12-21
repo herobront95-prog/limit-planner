@@ -297,14 +297,20 @@ const GlobalStockPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold">Дата загрузки</TableHead>
+                      <TableHead className="font-semibold">Дата остатков</TableHead>
+                      <TableHead className="font-semibold">Загружено</TableHead>
                       <TableHead className="font-semibold">Точки</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {history.map((item, index) => (
                       <TableRow key={item.id || index}>
-                        <TableCell>{formatDate(item.uploaded_at)}</TableCell>
+                        <TableCell className="font-medium">
+                          {item.stock_date ? formatDateShort(item.stock_date) : formatDateShort(item.uploaded_at)}
+                        </TableCell>
+                        <TableCell className="text-gray-500 text-sm">
+                          {formatDate(item.uploaded_at)}
+                        </TableCell>
                         <TableCell>{item.store_columns?.join(', ')}</TableCell>
                       </TableRow>
                     ))}

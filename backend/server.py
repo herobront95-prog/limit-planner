@@ -844,10 +844,11 @@ async def upload_global_stock(
             
             data[product] = product_data
         
-        # Save to database
+        # Save to database with the selected stock date
         upload_record = {
             "id": str(uuid.uuid4()),
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "stock_date": parsed_date.isoformat(),  # The actual date of the stock
             "store_columns": store_columns,
             "data": data
         }
@@ -878,14 +879,15 @@ async def upload_global_stock(
                         "stock": stock,
                         "prev_stock": prev_stock,
                         "change": change,  # Difference from previous stock
-                        "recorded_at": datetime.now(timezone.utc).isoformat()
+                        "recorded_at": parsed_date.isoformat()  # Use selected date, not current
                     }
                     await db.stock_history.insert_one(history_entry)
         
         return {
             "message": "Global stock uploaded successfully",
             "products_count": len(data),
-            "stores_found": store_columns
+            "stores_found": store_columns,
+            "stock_date": parsed_date.isoformat()
         }
         
     except HTTPException:

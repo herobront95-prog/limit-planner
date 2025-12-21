@@ -674,7 +674,7 @@ const StoreEditor = () => {
               <Button
                 data-testid="process-file-btn"
                 onClick={handleProcessFile}
-                disabled={(!useGlobalStock && uploadMethod === 'file' && !selectedFile) || (!useGlobalStock && uploadMethod === 'paste' && !pastedData.trim()) || processing}
+                disabled={(!useGlobalStock && uploadMethod === 'file' && !selectedFile) || processing}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 {processing ? (

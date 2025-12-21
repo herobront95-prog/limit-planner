@@ -447,7 +447,8 @@ class ProcessTextRequest(BaseModel):
     store_id: str
     data: List[TextDataItem] = Field(default_factory=list)
     filter_expressions: List[str] = Field(default_factory=list)
-    use_global_stock: bool = False  # New: use global stock instead of provided data
+    use_global_stock: bool = False  # Use global stock instead of provided data
+    seller_request: str = ""  # Additional text from seller to append at the end
 
 @api_router.post("/process-text")
 async def process_text_data(request: ProcessTextRequest):

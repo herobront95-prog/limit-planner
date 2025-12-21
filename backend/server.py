@@ -913,7 +913,7 @@ async def get_global_stock_history():
     """Get history of all global stock uploads (without full data)"""
     records = await db.global_stock.find(
         {},
-        {"_id": 0, "id": 1, "uploaded_at": 1, "store_columns": 1}
+        {"_id": 0, "id": 1, "uploaded_at": 1, "stock_date": 1, "store_columns": 1}
     ).sort("uploaded_at", -1).to_list(100)
     return records
 

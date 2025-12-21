@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -18,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { ArrowLeft, Upload, Database, Clock, Check } from 'lucide-react';
+import { ArrowLeft, Upload, Database, Clock, Check, Calendar } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -30,6 +32,11 @@ const GlobalStockPage = () => {
   const [latestStock, setLatestStock] = useState(null);
   const [history, setHistory] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [stockDate, setStockDate] = useState(() => {
+    // Default to today's date in YYYY-MM-DD format
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
 
   useEffect(() => {
     fetchData();

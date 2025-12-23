@@ -848,45 +848,80 @@ async def upload_global_stock(
         upload_record = {
             "id": str(uuid.uuid4()),
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
-            "stock_date": parsed_date.isoformat(),  # The actual date of the stock
+            "stock_date": parsed_date.isoformat(),
             "store_columns": store_columns,
             "data": data
         }
         
         await db.global_stock.insert_one(upload_record)
         
-        # Also save to stock history for each store with change calculation
+        # OPTIMIZED: Load all stores once and create name->id mapping
+        all_stores = await db.stores.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+        store_map = {s["name"]: s["id"] for s in all_stores}
+        
+        # Filter to only stores that exist in our database
+        valid_store_columns = [col for col in store_columns if col in store_map]
+        
+        if not valid_store_columns:
+            return {
+                "message": "Global stock uploaded but no matching stores found",
+                "products_count": len(data),
+                "stores_found": store_columns,
+                "stock_date": parsed_date.isoformat()
+            }
+        
+        # OPTIMIZED: Get all previous stocks in one aggregation query
+        prev_stocks_pipeline = [
+            {"$match": {"store_id": {"$in": list(store_map.values())}}},
+            {"$sort": {"recorded_at": -1}},
+            {"$group": {
+                "_id": {"store_id": "$store_id", "product": "$product"},
+                "prev_stock": {"$first": "$stock"}
+            }}
+        ]
+        prev_stocks_result = await db.stock_history.aggregate(prev_stocks_pipeline).to_list(None)
+        
+        # Create lookup dict: (store_id, product) -> prev_stock
+        prev_stocks_map = {}
+        for item in prev_stocks_result:
+            key = (item["_id"]["store_id"], item["_id"]["product"])
+            prev_stocks_map[key] = item["prev_stock"]
+        
+        # OPTIMIZED: Batch insert all history entries
+        history_entries = []
+        recorded_at_str = parsed_date.isoformat()
+        
         for product, store_stocks in data.items():
-            for store_name, stock in store_stocks.items():
-                # Find store by name
-                store = await db.stores.find_one({"name": store_name})
-                if store:
-                    # Get previous stock to calculate change (arrival)
-                    prev_entry = await db.stock_history.find_one(
-                        {"store_id": store["id"], "product": product},
-                        {"_id": 0, "stock": 1},
-                        sort=[("recorded_at", -1)]
-                    )
-                    
-                    prev_stock = prev_entry.get("stock", 0) if prev_entry else 0
-                    change = stock - prev_stock  # Positive = arrival, Negative = sold/used
-                    
-                    history_entry = {
-                        "id": str(uuid.uuid4()),
-                        "store_id": store["id"],
-                        "store_name": store_name,
-                        "product": product,
-                        "stock": stock,
-                        "prev_stock": prev_stock,
-                        "change": change,  # Difference from previous stock
-                        "recorded_at": parsed_date.isoformat()  # Use selected date, not current
-                    }
-                    await db.stock_history.insert_one(history_entry)
+            for store_name in valid_store_columns:
+                store_id = store_map[store_name]
+                stock = store_stocks.get(store_name, 0)
+                
+                # Get previous stock from pre-loaded map
+                prev_stock = prev_stocks_map.get((store_id, product), 0)
+                change = stock - prev_stock
+                
+                history_entries.append({
+                    "id": str(uuid.uuid4()),
+                    "store_id": store_id,
+                    "store_name": store_name,
+                    "product": product,
+                    "stock": stock,
+                    "prev_stock": prev_stock,
+                    "change": change,
+                    "recorded_at": recorded_at_str
+                })
+        
+        # Insert all entries in one batch operation
+        if history_entries:
+            await db.stock_history.insert_many(history_entries)
+        
+        logging.info(f"Global stock uploaded: {len(data)} products, {len(valid_store_columns)} stores, {len(history_entries)} entries")
         
         return {
             "message": "Global stock uploaded successfully",
             "products_count": len(data),
-            "stores_found": store_columns,
+            "stores_found": valid_store_columns,
+            "entries_created": len(history_entries),
             "stock_date": parsed_date.isoformat()
         }
         

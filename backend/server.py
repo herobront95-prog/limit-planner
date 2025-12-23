@@ -104,6 +104,25 @@ class OrderHistoryEntry(BaseModel):
     items: List[Dict[str, Any]] = Field(default_factory=list)  # [{product, stock, order, limit}]
 
 
+# Create indexes for better performance
+async def create_indexes():
+    """Create database indexes for faster queries"""
+    try:
+        # Stock history indexes for fast lookups
+        await db.stock_history.create_index([("store_id", 1), ("product", 1), ("recorded_at", -1)])
+        await db.stock_history.create_index([("store_id", 1), ("recorded_at", -1)])
+        await db.stock_history.create_index([("recorded_at", -1)])
+        
+        # Order history indexes
+        await db.order_history.create_index([("store_id", 1), ("created_at", -1)])
+        
+        # Stores index
+        await db.stores.create_index([("name", 1)])
+        
+        logging.info("Database indexes created successfully")
+    except Exception as e:
+        logging.error(f"Error creating indexes: {e}")
+
 # Improved product matching algorithm
 def tokenize(text: str) -> tuple:
     """Split text into word and number tokens"""

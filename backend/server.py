@@ -489,7 +489,7 @@ async def process_text_data(request: ProcessTextRequest):
             store_name = store["name"]
             stock_data = global_stock.get("data", {})
             
-            # Get "Электро" stock for reserve check
+            # Get "Электро" stock for warehouse check
             electro_stock = {}
             for product, stores in stock_data.items():
                 electro_val = stores.get("Электро", 0)
@@ -498,20 +498,21 @@ async def process_text_data(request: ProcessTextRequest):
             data_list = []
             removed_by_electro = 0
             for product, stores in stock_data.items():
-                # Check Электро reserve: if (Электро stock - 2) > 0, skip this product
+                # Check Электро warehouse: if (Электро stock - 2) <= 0, skip this product
+                # Products with 0, 1 or 2 on Электро are not available for order
                 electro_val = electro_stock.get(product, 0)
-                if electro_val - 2 > 0:
+                if electro_val - 2 <= 0:
                     removed_by_electro += 1
-                    continue  # Skip - есть резерв на Электро
+                    continue  # Skip - нет на складе Электро (0, 1 или 2 шт)
                 
                 stock = stores.get(store_name, 0)
                 data_list.append({"product": product, "stock": stock})
             
             if removed_by_electro > 0:
-                logging.info(f"Removed {removed_by_electro} products due to Электро reserve")
+                logging.info(f"Removed {removed_by_electro} products - not available on Электро warehouse")
             
             if not data_list:
-                raise HTTPException(status_code=400, detail=f"Нет данных для точки '{store_name}' в общих остатках (или все товары есть на Электро)")
+                raise HTTPException(status_code=400, detail=f"Нет данных для точки '{store_name}' в общих остатках (или все товары отсутствуют на складе Электро)")
             
             data_dict = {
                 'Товар': [item["product"] for item in data_list],

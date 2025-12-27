@@ -11,7 +11,7 @@ from typing import Dict, List, Any
 import uuid
 
 # Get API URL from frontend .env
-API_BASE_URL = "https://stock-limits-app.preview.emergentagent.com/api"
+API_BASE_URL = "https://shopmanager-35.preview.emergentagent.com/api"
 
 class OrderCalculatorTester:
     def __init__(self):

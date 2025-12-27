@@ -1,0 +1,171 @@
+<analysis>**original_problem_statement:**
+The user wants to migrate a Python script for calculating product orders into a full-stack web application.
+
+**PRODUCT REQUIREMENTS:**
+- **Core Functionality:** Convert an existing Python script for calculating orders based on stock and limits into a web app.
+- **Data Management:**
+    - Use MongoDB for data storage (stores, limits, product mappings, stock history, order history).
+    - UI for managing stores (CRUD).
+    - UI for managing limits per store (CRUD), including inline editing and bulk updates.
+    - UI for managing product mappings/synonyms (CRUD).
+    - UI for managing filters with custom formulas.
+- **Order Processing:**
+    - Process orders by uploading an Excel file with stock for a single store.
+    - Process orders by pasting stock data into a textarea.
+    - **Global Stock:** Upload a single Excel file containing stock for all stores.
+    - **Order from Global Stock:** Generate an order for a specific store using data from the global stock file.
+    - **Seller Request:** Allow pasting text into a field, which gets appended to the end of a generated order without applying any limits or filters.
+- **Advanced Logic:**
+    - **Warehouse Reserve:** Before generating an order from global stock, check the stock of a special store named Электро. If a product's stock in Электро is less than 3, it should be removed from the order calculation.
+    - **Product Matching:** Match long product names from stock files to shorter limit names (e.g., match Табак для кальяна Adalya... to the limit Adalya 50).
+- **History & Analytics:**
+    - **Order History:** Save every generated order and provide a UI to view past orders within the app.
+    - **Stock History:** Save all stock uploads, calculate the change (income/outcome) between uploads, and provide a UI to view a product's stock history with charts.
+    - Allow selecting a specific date when uploading global stock.
+- **UI/UX:**
+    - Modern and fast UI.
+    - Inline editing for store names and limit names/values.
+    - Performance: The application must be fast, especially when handling large datasets (thousands of products, hundreds of limits, stock for 20+ stores).
+- **Deployment:** The application must be accessible on the local network.
+
+**User's preferred language**: Русский
+
+**what currently exists?**
+A functional full-stack application with a FastAPI backend and React frontend. It includes:
+- Full CRUD for stores, limits (with inline editing), product mappings, and filters.
+- Order processing via Excel upload and pasted text.
+- A Global Stock feature to upload stock for all stores from a single file, including date selection for the upload.
+- Order generation from global stock, including the Электро warehouse filtering logic.
+- A Seller Request feature to append raw text to orders.
+- History tracking for both orders and stock levels, complete with charts for visualizing stock movement (stock level, change, and orders).
+- The application has been heavily optimized for performance, reducing stock upload and order generation times from minutes to under a second.
+
+**Last working item**:
+-   **Last item agent was working**: The agent was debugging an incorrect order generation process. The user reported that after uploading their live limits and stock files, certain products (e.g., ) are incorrectly missing from the final generated order, even though they appear to meet the stock and limit criteria. The user provided four files (, , , ) for reproduction. The agent downloaded these files and began analysis, identifying that the user's  file uses short names (e.g., Adalya 50) on a specific sheet (Limits), which likely conflicts with recent performance optimizations that favored exact product name matching.
+-   **Status**: **IN PROGRESS**
+-   **Agent Testing Done**: N
+-   **Which testing method agent to use?**: Manual testing by curl/python. The agent must create a test script that simulates the user's workflow:
+    1. Clear relevant DB collections (, , ).
+    2. Upload the user-provided  file to the global stock endpoint.
+    3. Update the limits for the test store using the user's  file.
+    4. Trigger the order generation process using the  file as the input for a single store.
+    5. Analyze the Filesystem     1K-blocks    Used Available Use% Mounted on
+overlay         98766372 6439912  92310076   7% /
+tmpfs              65536       0     65536   0% /dev
+/dev/nvme0n3    10218772 1467020   8735368  15% /app
+/dev/nvme0n1p1  98766372 6439912  92310076   7% /etc/hosts
+shm                65536       0     65536   0% /dev/shm
+tmpfs            8179576       0   8179576   0% /proc/acpi
+tmpfs            8179576       0   8179576   0% /proc/scsi
+tmpfs            8179576       0   8179576   0% /sys/firmware (pandas DataFrame) at each step inside the  function in  to pinpoint where  products are being filtered out.
+-   **User Testing Done**: N (User reported the bug and is waiting for a fix).
+
+**All Pending/In progress Issue list**:
+-   **Issue 1: Incorrect Order Generation - Products Missing (P0)**
+    -   **Description**: The core order generation logic is failing with the user's live data. Products that should be in the final order are missing. The user's described logic is:
+        1.  Check Generate from global stock.
+        2.  System takes the latest global stock for the target store and the Электро store.
+        3.  System filters out all products where the stock at Электро is less than 3.
+        4.  Product mappings (synonyms) are applied.
+        5.  Filters and limits are applied to the remaining products to calculate the final order quantity.
+    -   **Attempted fixes**: The agent previously optimized the order generation process, including adding a fast mode for limit matching that uses exact string comparison. This is the likely cause of the bug, as the user's new limits require the old, slower, substring matching logic ( with ).
+    -   **Next debug checklist**:
+        1.  In , locate the call to .
+        2.  Inside this function, find where limits are applied. The  function is called.
+        3.  The agent must ensure this function is called with  to allow for partial matching between long product names (e.g., Табак для кальяна Adalya La Muerte...) and short limit names (e.g., Adalya 50).
+        4.  Trace the  product through the entire function to see why it's being dropped. Check the Электро stock filter and the limit matching step specifically.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is the primary function of the application. Fixing it will make the order generation accurate and reliable with the user's real-world data.
+    -   **Status**: **IN PROGRESS**
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: Backend
+    -   **Blocked on other issue**: No
+
+**In progress Task List**:
+- None. The sole focus is on fixing the P0 bug.
+
+**Upcoming and Future Tasks**
+- No new tasks are requested. The user wants the existing features to be stable and correct.
+
+**Completed work in this session**
+- **Recently completed:**
+  - **Live Data Bug Fix**: Optimized order generation logic to handle 4000+ limits, reducing processing time from very long to under 1 second. Corrected the logic for filtering products based on stock at the Электро warehouse.
+  - **Global Stock Performance**: Optimized the global stock upload endpoint to handle 100,000+ records in under 1 second, down from 30+ minutes, by using batch database operations and creating indexes.
+  - **Date Selection for Stock**: Implemented a feature to allow users to select a specific date when uploading global stock.
+  - **Seller Request Feature**: Added a text area where users can paste a list of products to be appended to an order, bypassing all filtering and limit logic.
+  - **Stock Change Tracking**: The backend now calculates and saves the difference (income/outcome) between stock uploads. The frontend displays this change.
+  - **Chart Visuals**: Improved the stock history charts to be proportional to their values and display data labels.
+  - **Full History/Analytics Suite**: Built out the entire feature set for global stock, order history, and stock history with charts.
+  - **Inline Editing**: Added inline editing for both store names and limit names.
+  - **Product Mapping Feature**: Implemented the complete backend API and frontend UI for managing product synonyms.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+-   **Backend**: FastAPI, Pydantic, Motor (async MongoDB driver), Pandas
+-   **Frontend**: React, TailwindCSS, shadcn-ui, Recharts
+-   **Database**: MongoDB
+
+**key DB schema**
+-   : 
+-   : 
+-   : 
+-   : 
+-   : 
+-   : 
+
+**changes in tech stack**
+-    library was added to the frontend for displaying charts.
+
+**All files of reference**
+-   **/app/backend/server.py**: The central file for all business logic. The bug is located in the  function.
+-   **User-provided artifacts**: , , , . These are essential for reproducing the bug and are located in the  directory.
+
+**Areas that need refactoring**:
+-   The  file is now over 1200 lines long and contains all models, API endpoints, business logic, and helper functions. It should be broken down into a more modular structure (e.g., , , ) to improve maintainability.
+
+**key api endpoints**
+-   : Main endpoint for order generation (where the bug is).
+-   : For uploading stock for all stores.
+-   : To get stock history for a store.
+-   : To get order history for a store.
+-    (GET, POST, DELETE): For managing product mappings.
+
+**Critical Info for New Agent**
+-   The highest priority is fixing the order generation bug reported by the user. The user has provided all necessary files to reproduce it.
+-   The root cause is almost certainly the limit-matching logic. The agent implemented a fast mode with exact matching for performance, but the user's current  file requires substring matching. You need to revert to or conditionally use the slower, more flexible matching algorithm ( with ) inside  in .
+-   Use the provided files (, , ) to test your fix. The expected output is . Your goal is to make the generated file match the user's expected result as closely as possible, specifically ensuring  products are included.
+
+**documents and test reports created in this job**
+-   
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **Bug Report (PENDING)**: User explains the correct logic for order generation and reports that the current implementation is wrong.  products are missing. User uploaded 4 Excel files to demonstrate the issue.
+2.  **Request (Done)**: User wants the warehouse check logic to remove items if stock is <= 2 (not > 0).
+3.  **Request (Done)**: User clarifies the Электро warehouse logic: if stock is <= 2, remove the item.
+4.  **Bug Report (In Progress)**: User reports a performance issue with global stock uploads (30+ minutes).
+5.  **Request (Done)**: User wants to select a date when uploading global stock and wants the stock history page to show the correct date of the stock, not the upload date.
+6.  **Request (Done)**: User clarifies the Seller Request feature: pasted text should be appended to the end of the order, unprocessed.
+7.  **Bug Report (Done)**: User reports that the stock/change history charts are unclear and not proportional.
+8.  **Request (Done)**: User explains that stock changes (income) are not being calculated or displayed.
+9.  **Bug Report (Done)**: User reports that the stock history page loads very slowly and the dialog for charts is broken.
+10. **Bug Report (Done)**: User reports issues with the stock history UI: long product names overflow the dialog, and the current stock amount isn't visible in the main list.
+
+**Project Health Check:**
+-   **Broken**: The core order generation logic is broken for the user's live data.
+-   **Mocked**: None
+
+**3rd Party Integrations**
+-   None.
+
+**Testing status**
+-   **Testing agent used after significant changes**: YES
+-   **Troubleshoot agent used after agent stuck in loop**: NO
+-   **Test files created**: Yes, test scripts were created by the agent for performance testing. The user has also provided new test files in .
+-   **Known regressions**: The order generation logic has regressed due to performance optimizations.
+
+**Credentials to test flow:**
+-   N/A
+
+**What agent forgot to execute**
+-   The agent did not forget to execute a task, but the optimization of the limit-matching algorithm (introducing ) caused a critical regression when the user provided new data that relied on the old, more flexible matching method. The agent needs to reconcile this by making the matching method configurable or by reverting the change for this specific workflow.</analysis>

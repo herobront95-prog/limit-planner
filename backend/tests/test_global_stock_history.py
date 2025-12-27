@@ -16,7 +16,7 @@ import os
 from urllib.parse import quote
 
 # Get API URL from frontend .env
-API_BASE_URL = "https://stock-limits-app.preview.emergentagent.com/api"
+API_BASE_URL = "https://shopmanager-35.preview.emergentagent.com/api"
 
 class GlobalStockHistoryTester:
     def __init__(self):

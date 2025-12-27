@@ -8,7 +8,7 @@ import requests
 import json
 import uuid
 
-API_BASE_URL = "https://stock-limits-app.preview.emergentagent.com/api"
+API_BASE_URL = "https://shopmanager-35.preview.emergentagent.com/api"
 
 def test_detailed_mapping_integration():
     """Test detailed product mapping integration with specific scenarios"""

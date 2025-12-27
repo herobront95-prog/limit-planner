@@ -130,11 +130,32 @@ def tokenize(text: str) -> tuple:
     tokens = re.findall(r'\d+|[a-zA-Zа-яА-ЯёЁ]+', str(text))
     return tuple(tokens)
 
+def find_exact_match(product_name: str, limits_dict: Dict[str, int]) -> Optional[str]:
+    """
+    Fast exact matching - for when product names match limit names exactly.
+    """
+    # Try exact match first
+    if product_name in limits_dict:
+        return product_name
+    
+    # Try case-insensitive match
+    product_lower = product_name.lower().strip()
+    for limit_key in limits_dict.keys():
+        if limit_key.lower().strip() == product_lower:
+            return limit_key
+    
+    return None
+
 def find_best_match_improved(product_name: str, limits_dict: Dict[str, int]) -> Optional[str]:
     """
     Improved matching algorithm that correctly distinguishes between similar products.
     Uses tokenization to avoid matching '25' with '250' or '57595925'.
     """
+    # First try exact match (fast path)
+    exact = find_exact_match(product_name, limits_dict)
+    if exact:
+        return exact
+    
     product_tokens = tokenize(product_name.lower())
     
     best_match = None

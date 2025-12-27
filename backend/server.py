@@ -489,13 +489,29 @@ async def process_text_data(request: ProcessTextRequest):
             store_name = store["name"]
             stock_data = global_stock.get("data", {})
             
-            data_list = []
+            # Get "Электро" stock for reserve check
+            electro_stock = {}
             for product, stores in stock_data.items():
+                electro_val = stores.get("Электро", 0)
+                electro_stock[product] = electro_val
+            
+            data_list = []
+            removed_by_electro = 0
+            for product, stores in stock_data.items():
+                # Check Электро reserve: if (Электро stock - 2) > 0, skip this product
+                electro_val = electro_stock.get(product, 0)
+                if electro_val - 2 > 0:
+                    removed_by_electro += 1
+                    continue  # Skip - есть резерв на Электро
+                
                 stock = stores.get(store_name, 0)
                 data_list.append({"product": product, "stock": stock})
             
+            if removed_by_electro > 0:
+                logging.info(f"Removed {removed_by_electro} products due to Электро reserve")
+            
             if not data_list:
-                raise HTTPException(status_code=400, detail=f"Нет данных для точки '{store_name}' в общих остатках")
+                raise HTTPException(status_code=400, detail=f"Нет данных для точки '{store_name}' в общих остатках (или все товары есть на Электро)")
             
             data_dict = {
                 'Товар': [item["product"] for item in data_list],
@@ -517,17 +533,19 @@ async def process_text_data(request: ProcessTextRequest):
         # Apply product mappings (merge synonyms and sum stock)
         df = await apply_product_mappings(df)
         
-        # Save stock history
+        # Save stock history (batch insert for performance)
+        history_entries = []
         for _, row in df.iterrows():
-            history_entry = {
+            history_entries.append({
                 "id": str(uuid.uuid4()),
                 "store_id": store["id"],
                 "store_name": store["name"],
                 "product": row["Товар"],
                 "stock": row["Остаток"],
                 "recorded_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.stock_history.insert_one(history_entry)
+            })
+        if history_entries:
+            await db.stock_history.insert_many(history_entries)
         
         # Filter products with limits
         def should_keep(product_name):

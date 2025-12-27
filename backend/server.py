@@ -548,27 +548,30 @@ async def process_text_data(request: ProcessTextRequest):
         if history_entries:
             await db.stock_history.insert_many(history_entries)
         
-        # Filter products with limits
-        def should_keep(product_name):
-            match = find_best_match_improved(product_name, limits_dict)
-            return match is not None and limits_dict[match] > 0
+        # OPTIMIZED: Pre-calculate all matches once
+        logging.info(f"Starting limit matching for {len(df)} products against {len(limits_dict)} limits")
         
-        df = df[df['Товар'].apply(should_keep)]
+        # Build match cache: product -> (matched_limit_name, limit_value)
+        match_cache = {}
+        for product in df['Товар'].unique():
+            match = find_best_match_improved(product, limits_dict)
+            if match and limits_dict[match] > 0:
+                match_cache[product] = (match, limits_dict[match])
         
-        # Calculate order
-        def calculate_order(row):
-            product_name = row['Товар']
-            match = find_best_match_improved(product_name, limits_dict)
-            if match:
-                return max(0, limits_dict[match] - row['Остаток'])
-            return 0
+        logging.info(f"Found {len(match_cache)} products with matching limits")
         
-        df['Заказ'] = df.apply(calculate_order, axis=1)
+        # Filter to only products with limits (using cache)
+        df = df[df['Товар'].isin(match_cache.keys())]
         
-        # Add limits column
-        df['Matched_Product'] = df['Товар'].apply(lambda x: find_best_match_improved(x, limits_dict))
-        df['Лимиты'] = df['Matched_Product'].apply(lambda x: limits_dict[x] if x else 0)
-        df = df.drop('Matched_Product', axis=1)
+        if len(df) == 0:
+            raise HTTPException(
+                status_code=400, 
+                detail="Не найдено товаров с лимитами. Проверьте лимиты и названия товаров."
+            )
+        
+        # Calculate order and limits using cache (vectorized)
+        df['Лимиты'] = df['Товар'].apply(lambda x: match_cache[x][1])
+        df['Заказ'] = df.apply(lambda row: max(0, match_cache[row['Товар']][1] - row['Остаток']), axis=1)
         
         # Remove zero orders
         df = df[df['Заказ'] > 0]
@@ -598,22 +601,24 @@ async def process_text_data(request: ProcessTextRequest):
         seller_items = []
         if request.seller_request and request.seller_request.strip():
             seller_lines = [line.strip() for line in request.seller_request.strip().split('\n') if line.strip()]
-            for line in seller_lines:
-                # Add seller request as new rows with empty numeric values
-                new_row = pd.DataFrame([{
-                    'Товар': line,
-                    'Остаток': 0,
-                    'Лимиты': 0,
-                    'Заказ': 0
-                }])
-                df = pd.concat([df, new_row], ignore_index=True)
-                seller_items.append({
-                    "product": line,
+            seller_rows = [{
+                'Товар': line,
+                'Остаток': 0,
+                'Лимиты': 0,
+                'Заказ': 0
+            } for line in seller_lines]
+            
+            if seller_rows:
+                df = pd.concat([df, pd.DataFrame(seller_rows)], ignore_index=True)
+                seller_items = [{
+                    "product": row['Товар'],
                     "stock": 0,
                     "order": 0,
                     "limit": 0,
                     "is_seller_request": True
-                })
+                } for row in seller_rows]
+        
+        logging.info(f"Final order: {len(df)} items")
         
         # Save order to history
         order_items = []

@@ -80,6 +80,12 @@ const StoreEditor = () => {
   const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'paste' or 'global'
   const [useGlobalStock, setUseGlobalStock] = useState(false);
   const [hasGlobalStock, setHasGlobalStock] = useState(false);
+  const [limitsSearchQuery, setLimitsSearchQuery] = useState('');
+
+  // Filter limits based on search query
+  const filteredLimits = store?.limits?.filter(limit => 
+    limit.product.toLowerCase().includes(limitsSearchQuery.toLowerCase())
+  ) || [];
 
   useEffect(() => {
     fetchStore();

@@ -197,3 +197,75 @@ async def delete_limit(store_id: str, product_name: str, apply_to_all: bool = Fa
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Store not found")
     return {"message": "Limit deleted successfully"}
+
+
+# ==================== SAFE ENDPOINTS (product name in body) ====================
+# These endpoints accept product name in request body to handle special characters like /
+
+@router.post("/stores/{store_id}/limit/update")
+async def update_single_limit_safe(store_id: str, request: LimitUpdateRequest):
+    """Update a single limit - safe version that handles special characters"""
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    limits = store.get('limits', [])
+    found = False
+    for limit in limits:
+        if limit['product'] == request.product_name:
+            limit['limit'] = request.new_limit
+            found = True
+            break
+    
+    if not found:
+        limits.append({"product": request.product_name, "limit": request.new_limit})
+    
+    await db.stores.update_one(
+        {"id": store_id},
+        {"$set": {"limits": limits}}
+    )
+    return {"message": "Limit updated successfully"}
+
+
+@router.post("/stores/{store_id}/limit/rename")
+async def rename_limit_safe(store_id: str, request: LimitRenameByBodyRequest):
+    """Rename a limit - safe version that handles special characters"""
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    limits = store.get('limits', [])
+    found = False
+    for limit in limits:
+        if limit['product'] == request.product_name:
+            limit['product'] = request.new_name
+            found = True
+            break
+    
+    if not found:
+        raise HTTPException(status_code=404, detail="Limit not found")
+    
+    await db.stores.update_one(
+        {"id": store_id},
+        {"$set": {"limits": limits}}
+    )
+    return {"message": "Limit renamed successfully"}
+
+
+@router.post("/stores/{store_id}/limit/delete")
+async def delete_limit_safe(store_id: str, request: LimitDeleteRequest):
+    """Delete a limit - safe version that handles special characters"""
+    if request.apply_to_all:
+        result = await db.stores.update_many(
+            {},
+            {"$pull": {"limits": {"product": request.product_name}}}
+        )
+        return {"message": f"Limit deleted from {result.modified_count} stores"}
+    
+    result = await db.stores.update_one(
+        {"id": store_id},
+        {"$pull": {"limits": {"product": request.product_name}}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Store not found")
+    return {"message": "Limit deleted successfully"}

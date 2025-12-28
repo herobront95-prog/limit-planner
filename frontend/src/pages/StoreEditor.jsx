@@ -82,10 +82,10 @@ const StoreEditor = () => {
   const [hasGlobalStock, setHasGlobalStock] = useState(false);
   const [limitsSearchQuery, setLimitsSearchQuery] = useState('');
 
-  // Filter limits based on search query
-  const filteredLimits = store?.limits?.filter(limit => 
+  // Filter and sort limits alphabetically
+  const filteredLimits = (store?.limits?.filter(limit => 
     limit.product.toLowerCase().includes(limitsSearchQuery.toLowerCase())
-  ) || [];
+  ) || []).sort((a, b) => a.product.localeCompare(b.product, 'ru'));
 
   useEffect(() => {
     fetchStore();

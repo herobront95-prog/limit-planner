@@ -48,6 +48,7 @@ import {
   Package,
   History,
   Database,
+  Search,
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;

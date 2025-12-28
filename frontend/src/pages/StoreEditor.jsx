@@ -702,10 +702,25 @@ const StoreEditor = () => {
           {/* Limits Table */}
           <Card className="lg:col-span-2 bg-white/70 backdrop-blur-sm border-0 ring-1 ring-gray-200">
             <CardHeader>
-              <CardTitle style={{ fontFamily: 'Manrope, sans-serif' }}>Лимиты точки</CardTitle>
-              <CardDescription>
-                Нажмите на лимит для редактирования
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    Лимиты точки ({filteredLimits.length}{limitsSearchQuery && ` из ${store.limits.length}`})
+                  </CardTitle>
+                  <CardDescription>
+                    Нажмите на лимит для редактирования
+                  </CardDescription>
+                </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Поиск по названию..."
+                    value={limitsSearchQuery}
+                    onChange={(e) => setLimitsSearchQuery(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {store.limits.length === 0 ? (
@@ -716,10 +731,14 @@ const StoreEditor = () => {
                     Добавить лимиты
                   </Button>
                 </div>
+              ) : filteredLimits.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Ничего не найдено по запросу "{limitsSearchQuery}"</p>
+                </div>
               ) : (
-                <div className="rounded-lg border overflow-hidden">
+                <div className="rounded-lg border overflow-hidden max-h-[600px] overflow-y-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 bg-gray-50 z-10">
                       <TableRow className="bg-gray-50">
                         <TableHead className="font-semibold">Товар</TableHead>
                         <TableHead className="font-semibold">Лимит</TableHead>
@@ -727,7 +746,7 @@ const StoreEditor = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {store.limits.map((limit, index) => (
+                      {filteredLimits.map((limit, index) => (
                         <TableRow key={index} data-testid={`limit-row-${index}`}>
                           <TableCell className="font-medium">
                             {editingLimitName === limit.product ? (

@@ -189,8 +189,10 @@ const StoreEditor = () => {
     }
 
     try {
-      await axios.put(
-        `${API}/stores/${storeId}/limits/${encodeURIComponent(productName)}?new_limit=${newLimit}`
+      // Use safe endpoint that handles special characters in product name
+      await axios.post(
+        `${API}/stores/${storeId}/limit/update`,
+        { product_name: productName, new_limit: newLimit }
       );
       toast.success('Лимит обновлен');
       setEditingLimit(null);
@@ -223,9 +225,10 @@ const StoreEditor = () => {
     }
 
     try {
-      await axios.put(
-        `${API}/stores/${storeId}/limits/${encodeURIComponent(oldProductName)}/rename`,
-        { new_name: editNameValue.trim() }
+      // Use safe endpoint that handles special characters in product name
+      await axios.post(
+        `${API}/stores/${storeId}/limit/rename`,
+        { product_name: oldProductName, new_name: editNameValue.trim() }
       );
       toast.success('Название обновлено');
       handleCancelEditLimitName();
@@ -237,8 +240,10 @@ const StoreEditor = () => {
 
   const handleDeleteLimit = async (productName, deleteFromAll = false) => {
     try {
-      await axios.delete(
-        `${API}/stores/${storeId}/limits/${encodeURIComponent(productName)}?apply_to_all=${deleteFromAll}`
+      // Use safe endpoint that handles special characters in product name
+      await axios.post(
+        `${API}/stores/${storeId}/limit/delete`,
+        { product_name: productName, apply_to_all: deleteFromAll }
       );
       toast.success(
         deleteFromAll

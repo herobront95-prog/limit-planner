@@ -1,10 +1,26 @@
 from fastapi import APIRouter, HTTPException
-from typing import List
+from pydantic import BaseModel
+from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
 
 from database import db
 from models import Store, StoreCreate, StoreUpdate, LimitBulkUpdate, LimitRenameRequest
+
+
+class LimitUpdateRequest(BaseModel):
+    product_name: str
+    new_limit: int
+
+
+class LimitRenameByBodyRequest(BaseModel):
+    product_name: str
+    new_name: str
+
+
+class LimitDeleteRequest(BaseModel):
+    product_name: str
+    apply_to_all: bool = False
 
 router = APIRouter()
 

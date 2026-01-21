@@ -235,8 +235,10 @@ async def process_text_data(request: ProcessTextRequest):
 async def process_order(
     file: UploadFile = File(...),
     store_id: str = None,
-    filter_expressions: str = "[]"
+    filter_expressions: str = "[]",
+    seller_request: str = ""
 ):
+    """Process order from uploaded Excel file - uses same logic as process_text_data"""
     try:
         filter_list = json.loads(filter_expressions)
         
@@ -255,29 +257,37 @@ async def process_order(
         df['Остаток'] = pd.to_numeric(df['Остаток'], errors='coerce').fillna(0)
         df['Товар'] = df['Товар'].astype(str)
         
+        # Apply product mappings (same as process_text_data)
         df = await apply_product_mappings(df)
         
-        def should_keep(product_name):
-            match = find_best_match_improved(product_name, limits_dict)
-            return match is not None and limits_dict[match] > 0
+        # Pre-calculate all matches (optimized approach from process_text_data)
+        logging.info(f"Starting limit matching for {len(df)} products against {len(limits_dict)} limits")
         
-        df = df[df['Товар'].apply(should_keep)]
+        match_cache = {}
+        for product in df['Товар'].unique():
+            match = find_best_match_improved(product, limits_dict)
+            if match and limits_dict[match] > 0:
+                match_cache[product] = (match, limits_dict[match])
         
-        def calculate_order(row):
-            product_name = row['Товар']
-            match = find_best_match_improved(product_name, limits_dict)
-            if match:
-                return max(0, limits_dict[match] - row['Остаток'])
-            return 0
+        logging.info(f"Found {len(match_cache)} products with matching limits")
         
-        df['Заказ'] = df.apply(calculate_order, axis=1)
+        # Filter to only products with limits
+        df = df[df['Товар'].isin(match_cache.keys())]
         
-        df['Matched_Product'] = df['Товар'].apply(lambda x: find_best_match_improved(x, limits_dict))
-        df['Лимиты'] = df['Matched_Product'].apply(lambda x: limits_dict[x] if x else 0)
-        df = df.drop('Matched_Product', axis=1)
+        if len(df) == 0:
+            raise HTTPException(
+                status_code=400, 
+                detail="Не найдено товаров с лимитами. Проверьте лимиты и названия товаров."
+            )
         
+        # Calculate order and limits
+        df['Лимиты'] = df['Товар'].apply(lambda x: match_cache[x][1])
+        df['Заказ'] = df.apply(lambda row: max(0, match_cache[row['Товар']][1] - row['Остаток']), axis=1)
+        
+        # Remove zero orders
         df = df[df['Заказ'] > 0]
         
+        # Apply custom filters
         if filter_list:
             for expr in filter_list:
                 if expr.strip():
@@ -291,11 +301,81 @@ async def process_order(
                         axis=1
                     )]
         
+        if len(df) == 0:
+            raise HTTPException(
+                status_code=400, 
+                detail="Не найдено товаров для заказа."
+            )
+        
+        # Append seller request text
+        seller_items = []
+        if seller_request and seller_request.strip():
+            seller_lines = [line.strip() for line in seller_request.strip().split('\n') if line.strip()]
+            seller_rows = [{
+                'Товар': line,
+                'Остаток': 0,
+                'Лимиты': 0,
+                'Заказ': 0
+            } for line in seller_lines]
+            
+            if seller_rows:
+                df = pd.concat([df, pd.DataFrame(seller_rows)], ignore_index=True)
+                seller_items = [{
+                    "product": row['Товар'],
+                    "stock": 0,
+                    "order": 0,
+                    "limit": 0,
+                    "is_seller_request": True
+                } for row in seller_rows]
+        
+        logging.info(f"Final order: {len(df)} items")
+        
+        # Save order to history
+        order_items = []
+        for _, row in df.iterrows():
+            is_seller = row["Товар"] in [item["product"] for item in seller_items]
+            order_items.append({
+                "product": row["Товар"],
+                "stock": float(row["Остаток"]),
+                "order": float(row["Заказ"]),
+                "limit": float(row["Лимиты"]),
+                "is_seller_request": is_seller
+            })
+        
+        order_history = {
+            "id": str(uuid.uuid4()),
+            "store_id": store["id"],
+            "store_name": store["name"],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "items": order_items,
+            "seller_request": seller_request if seller_request else None
+        }
+        await db.order_history.insert_one(order_history)
+        
+        # Generate Excel response in the same format as order history download
+        store_name = store['name']
+        
+        output_df = pd.DataFrame([
+            {store_name: row['Товар'], 'Заказ': int(row['Заказ'])}
+            for _, row in df.iterrows()
+        ])
+        
         output = io.BytesIO()
-        df.to_excel(output, index=False, engine='openpyxl')
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            output_df.to_excel(writer, index=False, sheet_name='Заказ')
+            
+            from openpyxl.styles import Font
+            workbook = writer.book
+            worksheet = writer.sheets['Заказ']
+            bold_font = Font(bold=True)
+            
+            for row in worksheet.iter_rows():
+                for cell in row:
+                    cell.font = bold_font
+        
         output.seek(0)
         
-        filename = f"{store['name']}.xlsx"
+        filename = f"{store_name}.xlsx"
         encoded_filename = quote(filename)
         
         return StreamingResponse(

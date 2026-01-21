@@ -776,50 +776,6 @@ const StoreEditor = () => {
       </div>
 
       {/* Filters Dialog */}
-      <Dialog open={limitsDialogOpen} onOpenChange={setLimitsDialogOpen}>
-        <DialogContent className="max-w-2xl" data-testid="add-limits-dialog">
-          <DialogHeader>
-            <DialogTitle>Добавить лимиты</DialogTitle>
-            <DialogDescription>
-              Введите лимиты в формате: Товар :: число (каждый с новой строки)
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Textarea
-              data-testid="limits-textarea"
-              placeholder="Пример:
-Дарксайд 25 :: 2
-Квазар X :: 5
-МегаТор 100 :: 10"
-              value={newLimitsText}
-              onChange={(e) => setNewLimitsText(e.target.value)}
-              className="min-h-[200px] font-mono text-sm"
-            />
-            <div className="flex items-center space-x-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <Switch
-                id="apply-to-all"
-                data-testid="apply-to-all-switch"
-                checked={applyToAll}
-                onCheckedChange={setApplyToAll}
-              />
-              <Label htmlFor="apply-to-all" className="cursor-pointer">
-                Добавить во все точки (не заменит существующие лимиты)
-              </Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLimitsDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button data-testid="submit-limits-btn" onClick={handleAddLimits}>
-              <Save className="mr-2 h-4 w-4" />
-              Сохранить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Filters Dialog */}
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-w-3xl" data-testid="filters-dialog">
           <DialogHeader>

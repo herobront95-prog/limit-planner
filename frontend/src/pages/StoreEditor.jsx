@@ -662,41 +662,62 @@ const StoreEditor = () => {
             </CardContent>
           </Card>
 
-          {/* Limits Table */}
+          {/* New Products (Novelties) Section */}
           <Card className="lg:col-span-2 bg-white/70 backdrop-blur-sm border-0 ring-1 ring-gray-200">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    Лимиты точки ({filteredLimits.length}{limitsSearchQuery && ` из ${store.limits.length}`})
+                  <CardTitle className="flex items-center" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    <Sparkles className="mr-2 h-5 w-5 text-amber-500" />
+                    Новинки
+                    {newProducts.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700">
+                        {filteredNewProducts.length}{newProductsSearchQuery && ` из ${newProducts.length}`}
+                      </Badge>
+                    )}
                   </CardTitle>
                   <CardDescription>
-                    Нажмите на лимит для редактирования
+                    Товары на Электро, которых нет в лимитах или лимит = 0
                   </CardDescription>
                 </div>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Поиск по названию..."
-                    value={limitsSearchQuery}
-                    onChange={(e) => setLimitsSearchQuery(e.target.value)}
-                    className="pl-9 h-9"
-                  />
+                <div className="flex items-center space-x-2">
+                  {newProducts.length > 0 && (
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Поиск..."
+                        value={newProductsSearchQuery}
+                        onChange={(e) => setNewProductsSearchQuery(e.target.value)}
+                        className="pl-9 h-9"
+                      />
+                    </div>
+                  )}
+                  <Button
+                    onClick={fetchNewProducts}
+                    disabled={newProductsLoading}
+                    variant="outline"
+                    className="border-amber-200 hover:bg-amber-50"
+                  >
+                    {newProductsLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600 mr-2"></div>
+                    ) : (
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                    )}
+                    Посмотреть изменения
+                  </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {store.limits.length === 0 ? (
+              {newProducts.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-500 mb-4">Лимиты не настроены</p>
-                  <Button onClick={() => setLimitsDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Добавить лимиты
-                  </Button>
+                  <Sparkles className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 mb-2">Нажмите "Посмотреть изменения"</p>
+                  <p className="text-gray-400 text-sm">чтобы найти товары на Электро, которых нет в лимитах</p>
                 </div>
-              ) : filteredLimits.length === 0 ? (
+              ) : filteredNewProducts.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Ничего не найдено по запросу "{limitsSearchQuery}"</p>
+                  <p className="text-gray-500">Ничего не найдено по запросу "{newProductsSearchQuery}"</p>
                 </div>
               ) : (
                 <div className="rounded-lg border overflow-hidden max-h-[600px] overflow-y-auto">
@@ -704,123 +725,44 @@ const StoreEditor = () => {
                     <TableHeader className="sticky top-0 bg-gray-50 z-10">
                       <TableRow className="bg-gray-50">
                         <TableHead className="font-semibold">Товар</TableHead>
-                        <TableHead className="font-semibold">Лимит</TableHead>
-                        <TableHead className="w-32"></TableHead>
+                        <TableHead className="font-semibold w-28 text-center">На Электро</TableHead>
+                        <TableHead className="font-semibold w-28 text-center">Лимит</TableHead>
+                        <TableHead className="w-24"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredLimits.map((limit, index) => (
-                        <TableRow key={index} data-testid={`limit-row-${index}`}>
-                          <TableCell className="font-medium">
-                            {editingLimitName === limit.product ? (
-                              <div className="flex items-center space-x-2">
-                                <Input
-                                  value={editNameValue}
-                                  onChange={(e) => setEditNameValue(e.target.value)}
-                                  className="h-8 flex-1 min-w-[200px]"
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleSaveLimitName(limit.product);
-                                    } else if (e.key === 'Escape') {
-                                      handleCancelEditLimitName();
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-green-600"
-                                  onClick={() => handleSaveLimitName(limit.product)}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
-                                  onClick={handleCancelEditLimitName}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <span 
-                                className="cursor-pointer hover:text-indigo-600 hover:underline"
-                                onClick={() => handleStartEditLimitName(limit.product)}
-                                title="Нажмите для редактирования"
-                              >
-                                {limit.product}
-                              </span>
-                            )}
+                      {filteredNewProducts.map((product, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium text-sm">
+                            {product.product}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              {product.electro_stock}
+                            </Badge>
                           </TableCell>
                           <TableCell>
-                            {editingLimit === limit.product ? (
-                              <div className="flex items-center space-x-2">
-                                <Input
-                                  type="number"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  className="w-20 h-8"
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleSaveEdit(limit.product);
-                                    } else if (e.key === 'Escape') {
-                                      handleCancelEdit();
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-green-600"
-                                  onClick={() => handleSaveEdit(limit.product)}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
-                                  onClick={handleCancelEdit}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="bg-indigo-50 text-indigo-700 border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-colors"
-                                onClick={() => handleStartEdit(limit.product, limit.limit)}
-                              >
-                                {limit.limit}
-                                <Edit2 className="h-3 w-3 ml-2" />
-                              </Badge>
-                            )}
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={newProductLimits[product.product] || ''}
+                              onChange={(e) => setNewProductLimits(prev => ({
+                                ...prev,
+                                [product.product]: e.target.value
+                              }))}
+                              className="w-20 h-8 text-center mx-auto"
+                            />
                           </TableCell>
                           <TableCell>
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                data-testid={`delete-limit-${index}`}
-                                onClick={() => handleDeleteLimit(limit.product, false)}
-                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                data-testid={`delete-limit-all-${index}`}
-                                onClick={() => handleDeleteLimit(limit.product, true)}
-                                className="h-8 w-8 text-orange-500 hover:text-orange-700 hover:bg-orange-50"
-                                title="Удалить из всех точек"
-                              >
-                                <Globe className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddNewProductLimit(product)}
+                              disabled={!newProductLimits[product.product]}
+                              className="bg-green-600 hover:bg-green-700 h-8"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -833,7 +775,7 @@ const StoreEditor = () => {
         </div>
       </div>
 
-      {/* Add Limits Dialog */}
+      {/* Filters Dialog */}
       <Dialog open={limitsDialogOpen} onOpenChange={setLimitsDialogOpen}>
         <DialogContent className="max-w-2xl" data-testid="add-limits-dialog">
           <DialogHeader>

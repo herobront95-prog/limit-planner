@@ -826,15 +826,27 @@ const StoreEditor = () => {
                             />
                           </TableCell>
                           <TableCell>
-                            <Button
-                              size="sm"
-                              data-testid={`add-novelty-${index}`}
-                              onClick={() => handleAddNewProductLimit(product)}
-                              disabled={!newProductLimits[product.product]}
-                              className="bg-emerald-600 hover:bg-emerald-700 h-8"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center space-x-1">
+                              <Button
+                                size="sm"
+                                data-testid={`add-novelty-${index}`}
+                                onClick={() => handleAddNewProductLimit(product)}
+                                disabled={!newProductLimits[product.product]}
+                                className="bg-emerald-600 hover:bg-emerald-700 h-8"
+                                title="Добавить в лимиты"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleAddToBlacklist(product.product)}
+                                className="h-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                title="Больше не показывать"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

@@ -490,6 +490,14 @@ const StoreEditor = () => {
             <div className="flex space-x-3">
               <Button
                 variant="outline"
+                onClick={() => navigate(`/store/${storeId}/limits`)}
+                className="border-purple-200 hover:bg-purple-50"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Лимиты ({store.limits.length})
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => navigate(`/store/${storeId}/stock`)}
                 className="border-blue-200 hover:bg-blue-50"
               >
@@ -512,14 +520,6 @@ const StoreEditor = () => {
               >
                 <Filter className="mr-2 h-4 w-4" />
                 Фильтры ({filterExpressions.length})
-              </Button>
-              <Button
-                data-testid="add-limits-btn"
-                onClick={() => setLimitsDialogOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Добавить лимиты
               </Button>
             </div>
           </div>

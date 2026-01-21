@@ -37,18 +37,17 @@ import {
   ArrowLeft,
   Upload,
   Plus,
-  Trash2,
   Download,
   Filter,
   X,
   Save,
-  Globe,
-  Edit2,
-  Check,
   Package,
   History,
   Database,
   Search,
+  Settings,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -72,20 +71,16 @@ const StoreEditor = () => {
   const [newFilterName, setNewFilterName] = useState('');
   const [newFilterExpression, setNewFilterExpression] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [editingLimit, setEditingLimit] = useState(null);
-  const [editValue, setEditValue] = useState('');
-  const [editingLimitName, setEditingLimitName] = useState(null);
-  const [editNameValue, setEditNameValue] = useState('');
   const [pastedData, setPastedData] = useState('');
   const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'paste' or 'global'
   const [useGlobalStock, setUseGlobalStock] = useState(false);
   const [hasGlobalStock, setHasGlobalStock] = useState(false);
-  const [limitsSearchQuery, setLimitsSearchQuery] = useState('');
-
-  // Filter limits (no sorting for faster loading)
-  const filteredLimits = store?.limits?.filter(limit => 
-    limit.product.toLowerCase().includes(limitsSearchQuery.toLowerCase())
-  ) || [];
+  
+  // New products (novelties) state
+  const [newProducts, setNewProducts] = useState([]);
+  const [newProductsLoading, setNewProductsLoading] = useState(false);
+  const [newProductsSearchQuery, setNewProductsSearchQuery] = useState('');
+  const [newProductLimits, setNewProductLimits] = useState({}); // { product: limitValue }
 
   useEffect(() => {
     fetchStore();

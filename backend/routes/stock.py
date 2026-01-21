@@ -356,34 +356,24 @@ class BlacklistRemoveRequest(BaseModel):
     product: str
 
 
-@router.get("/stores/{store_id}/blacklist")
-async def get_blacklist(store_id: str):
-    """Get blacklisted products for a store"""
-    store = await db.stores.find_one({"id": store_id})
-    if not store:
-        raise HTTPException(status_code=404, detail="Store not found")
-    
-    blacklist_doc = await db.product_blacklist.find_one({"store_id": store_id})
+@router.get("/blacklist")
+async def get_blacklist():
+    """Get global blacklisted products"""
+    blacklist_doc = await db.product_blacklist.find_one({"_type": "global"})
     products = blacklist_doc.get("products", []) if blacklist_doc else []
     
     return {
-        "store_id": store_id,
-        "store_name": store["name"],
         "products": products,
         "count": len(products)
     }
 
 
-@router.post("/stores/{store_id}/blacklist/add")
-async def add_to_blacklist(store_id: str, request: BlacklistAddRequest):
-    """Add a product to the blacklist"""
-    store = await db.stores.find_one({"id": store_id})
-    if not store:
-        raise HTTPException(status_code=404, detail="Store not found")
-    
+@router.post("/blacklist/add")
+async def add_to_blacklist(request: BlacklistAddRequest):
+    """Add a product to the global blacklist"""
     # Upsert: add to set if not exists
     await db.product_blacklist.update_one(
-        {"store_id": store_id},
+        {"_type": "global"},
         {"$addToSet": {"products": request.product}},
         upsert=True
     )
@@ -391,15 +381,11 @@ async def add_to_blacklist(store_id: str, request: BlacklistAddRequest):
     return {"message": "Product added to blacklist"}
 
 
-@router.post("/stores/{store_id}/blacklist/remove")
-async def remove_from_blacklist(store_id: str, request: BlacklistRemoveRequest):
-    """Remove a product from the blacklist"""
-    store = await db.stores.find_one({"id": store_id})
-    if not store:
-        raise HTTPException(status_code=404, detail="Store not found")
-    
+@router.post("/blacklist/remove")
+async def remove_from_blacklist(request: BlacklistRemoveRequest):
+    """Remove a product from the global blacklist"""
     await db.product_blacklist.update_one(
-        {"store_id": store_id},
+        {"_type": "global"},
         {"$pull": {"products": request.product}}
     )
     

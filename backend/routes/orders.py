@@ -187,12 +187,32 @@ async def process_text_data(request: ProcessTextRequest):
         }
         await db.order_history.insert_one(order_history)
         
-        # Generate Excel response
+        # Generate Excel response in the same format as order history download
+        store_name = store['name']
+        
+        # Create simplified format: Store name column + Заказ column
+        output_df = pd.DataFrame([
+            {store_name: row['Товар'], 'Заказ': int(row['Заказ'])}
+            for _, row in df.iterrows()
+        ])
+        
         output = io.BytesIO()
-        df.to_excel(output, index=False, engine='openpyxl')
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            output_df.to_excel(writer, index=False, sheet_name='Заказ')
+            
+            # Apply bold font to all cells
+            from openpyxl.styles import Font
+            workbook = writer.book
+            worksheet = writer.sheets['Заказ']
+            bold_font = Font(bold=True)
+            
+            for row in worksheet.iter_rows():
+                for cell in row:
+                    cell.font = bold_font
+        
         output.seek(0)
         
-        filename = f"{store['name']}.xlsx"
+        filename = f"{store_name}.xlsx"
         encoded_filename = quote(filename)
         
         return StreamingResponse(

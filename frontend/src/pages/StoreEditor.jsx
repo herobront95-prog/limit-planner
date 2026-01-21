@@ -168,90 +168,51 @@ const StoreEditor = () => {
     }
   };
 
-  const handleStartEdit = (productName, currentLimit) => {
-    setEditingLimit(productName);
-    setEditValue(currentLimit.toString());
+  // Fetch new products (novelties) from Электро
+  const fetchNewProducts = async () => {
+    setNewProductsLoading(true);
+    try {
+      const response = await axios.get(`${API}/stores/${storeId}/new-products`);
+      setNewProducts(response.data.new_products || []);
+      setNewProductLimits({});
+    } catch (error) {
+      toast.error('Ошибка загрузки новинок');
+    } finally {
+      setNewProductsLoading(false);
+    }
   };
 
-  const handleCancelEdit = () => {
-    setEditingLimit(null);
-    setEditValue('');
-  };
-
-  const handleSaveEdit = async (productName) => {
-    const newLimit = parseInt(editValue);
-    if (isNaN(newLimit) || newLimit < 0) {
-      toast.error('Введите корректное число');
+  // Add a new product to limits
+  const handleAddNewProductLimit = async (product) => {
+    const limitValue = newProductLimits[product.product];
+    if (!limitValue || isNaN(parseInt(limitValue)) || parseInt(limitValue) < 0) {
+      toast.error('Введите корректное значение лимита');
       return;
     }
 
     try {
-      // Use safe endpoint that handles special characters in product name
-      await axios.post(
-        `${API}/stores/${storeId}/limit/update`,
-        { product_name: productName, new_limit: newLimit }
-      );
-      toast.success('Лимит обновлен');
-      setEditingLimit(null);
-      setEditValue('');
+      await axios.post(`${API}/stores/${storeId}/limits`, {
+        limits: [{ product: product.product, limit: parseInt(limitValue) }],
+        apply_to_all: false,
+      });
+      toast.success('Лимит добавлен');
+      // Remove from list and refresh store
+      setNewProducts(newProducts.filter(p => p.product !== product.product));
+      setNewProductLimits(prev => {
+        const updated = { ...prev };
+        delete updated[product.product];
+        return updated;
+      });
       fetchStore();
     } catch (error) {
-      toast.error('Ошибка обновления лимита');
+      toast.error('Ошибка добавления лимита');
     }
   };
 
-  const handleStartEditLimitName = (productName) => {
-    setEditingLimitName(productName);
-    setEditNameValue(productName);
-  };
-
-  const handleCancelEditLimitName = () => {
-    setEditingLimitName(null);
-    setEditNameValue('');
-  };
-
-  const handleSaveLimitName = async (oldProductName) => {
-    if (!editNameValue.trim()) {
-      toast.error('Введите название товара');
-      return;
-    }
-
-    if (editNameValue.trim() === oldProductName) {
-      handleCancelEditLimitName();
-      return;
-    }
-
-    try {
-      // Use safe endpoint that handles special characters in product name
-      await axios.post(
-        `${API}/stores/${storeId}/limit/rename`,
-        { product_name: oldProductName, new_name: editNameValue.trim() }
-      );
-      toast.success('Название обновлено');
-      handleCancelEditLimitName();
-      fetchStore();
-    } catch (error) {
-      toast.error('Ошибка обновления названия');
-    }
-  };
-
-  const handleDeleteLimit = async (productName, deleteFromAll = false) => {
-    try {
-      // Use safe endpoint that handles special characters in product name
-      await axios.post(
-        `${API}/stores/${storeId}/limit/delete`,
-        { product_name: productName, apply_to_all: deleteFromAll }
-      );
-      toast.success(
-        deleteFromAll
-          ? 'Лимит удален из всех точек'
-          : 'Лимит удален'
-      );
-      fetchStore();
-    } catch (error) {
-      toast.error('Ошибка удаления лимита');
-    }
-  };
+  // Filter new products by search
+  const filteredNewProducts = newProducts.filter(p =>
+    p.product.toLowerCase().includes(newProductsSearchQuery.toLowerCase())
+  );
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];

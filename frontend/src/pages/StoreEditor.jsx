@@ -82,6 +82,11 @@ const StoreEditor = () => {
   const [newProductsLoading, setNewProductsLoading] = useState(false);
   const [newProductsSearchQuery, setNewProductsSearchQuery] = useState('');
   const [newProductLimits, setNewProductLimits] = useState({}); // { product: limitValue }
+  
+  // Blacklist state
+  const [blacklist, setBlacklist] = useState([]);
+  const [blacklistDialogOpen, setBlacklistDialogOpen] = useState(false);
+  const [blacklistSearchQuery, setBlacklistSearchQuery] = useState('');
 
   useEffect(() => {
     fetchStore();

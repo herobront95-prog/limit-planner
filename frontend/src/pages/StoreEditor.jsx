@@ -49,6 +49,7 @@ import {
   Settings,
   Sparkles,
   RefreshCw,
+  Ban,
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;

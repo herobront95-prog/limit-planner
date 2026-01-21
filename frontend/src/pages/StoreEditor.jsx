@@ -990,6 +990,75 @@ const StoreEditor = () => {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* Blacklist Dialog */}
+      <Dialog open={blacklistDialogOpen} onOpenChange={setBlacklistDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Ban className="mr-2 h-5 w-5" />
+              Чёрный список ({blacklist.length})
+            </DialogTitle>
+            <DialogDescription>
+              Товары из этого списка не будут показываться в новинках
+            </DialogDescription>
+          </DialogHeader>
+          
+          {blacklist.length > 0 && (
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Поиск в чёрном списке..."
+                value={blacklistSearchQuery}
+                onChange={(e) => setBlacklistSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          )}
+          
+          <div className="flex-1 overflow-y-auto">
+            {blacklist.length === 0 ? (
+              <div className="text-center py-12">
+                <Ban className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500">Чёрный список пуст</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Нажмите X рядом с товаром в новинках, чтобы добавить его сюда
+                </p>
+              </div>
+            ) : filteredBlacklist.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Ничего не найдено по запросу "{blacklistSearchQuery}"</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredBlacklist.map((product, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 p-3 rounded-lg transition-colors"
+                  >
+                    <span className="text-sm font-medium truncate flex-1 mr-4">{product}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRemoveFromBlacklist(product)}
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Удалить
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setBlacklistDialogOpen(false)}>
+              Закрыть
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

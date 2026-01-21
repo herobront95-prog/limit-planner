@@ -758,9 +758,10 @@ const StoreEditor = () => {
                           <TableCell>
                             <Button
                               size="sm"
+                              data-testid={`add-novelty-${index}`}
                               onClick={() => handleAddNewProductLimit(product)}
                               disabled={!newProductLimits[product.product]}
-                              className="bg-green-600 hover:bg-green-700 h-8"
+                              className="bg-emerald-600 hover:bg-emerald-700 h-8"
                             >
                               <Plus className="h-4 w-4" />
                             </Button>

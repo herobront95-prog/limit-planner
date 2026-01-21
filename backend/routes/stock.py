@@ -285,3 +285,52 @@ async def get_product_stock_history(
         "stock_history": stock_records,
         "order_history": orders_data
     }
+
+
+@router.get("/stores/{store_id}/new-products")
+async def get_new_products(store_id: str):
+    """
+    Get products that are on Электро (stock >= 3) but not in store limits or have limit = 0.
+    Returns products that could be added to limits.
+    """
+    store = await db.stores.find_one({"id": store_id})
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    
+    # Get latest global stock
+    global_stock = await db.global_stock.find_one({}, sort=[("uploaded_at", -1)])
+    if not global_stock:
+        return {"new_products": [], "message": "Нет загруженных общих остатков"}
+    
+    stock_data = global_stock.get("data", {})
+    
+    # Get store limits as a dict
+    limits_dict = {item['product']: item['limit'] for item in store.get('limits', [])}
+    
+    # Find products on Электро with stock >= 3 that are not in limits or have limit = 0
+    new_products = []
+    for product, stores in stock_data.items():
+        electro_stock = stores.get("Электро", 0)
+        
+        # Only consider products with Электро stock >= 3
+        if electro_stock < 3:
+            continue
+        
+        # Check if product is not in limits or has limit = 0
+        current_limit = limits_dict.get(product, None)
+        if current_limit is None or current_limit == 0:
+            new_products.append({
+                "product": product,
+                "electro_stock": electro_stock,
+                "current_limit": current_limit
+            })
+    
+    # Sort by product name
+    new_products.sort(key=lambda x: x["product"])
+    
+    return {
+        "new_products": new_products,
+        "total_count": len(new_products),
+        "store_name": store["name"]
+    }
+

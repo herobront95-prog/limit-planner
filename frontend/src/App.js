@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import Dashboard from '@/pages/Dashboard';
 import StoreEditor from '@/pages/StoreEditor';
+import StoreLimitsPage from '@/pages/StoreLimitsPage';
 import ProductMappings from '@/pages/ProductMappings';
 import GlobalStockPage from '@/pages/GlobalStockPage';
 import OrderHistoryPage from '@/pages/OrderHistoryPage';
@@ -16,6 +17,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/store/:storeId" element={<StoreEditor />} />
+          <Route path="/store/:storeId/limits" element={<StoreLimitsPage />} />
           <Route path="/store/:storeId/orders" element={<OrderHistoryPage />} />
           <Route path="/store/:storeId/stock" element={<StockHistoryPage />} />
           <Route path="/mappings" element={<ProductMappings />} />

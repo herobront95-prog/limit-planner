@@ -37,6 +37,7 @@ import {
   ArrowLeft,
   Upload,
   Plus,
+  Trash2,
   Download,
   Filter,
   X,

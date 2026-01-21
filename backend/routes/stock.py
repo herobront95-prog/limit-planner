@@ -291,7 +291,7 @@ async def get_product_stock_history(
 async def get_new_products(store_id: str):
     """
     Get products that are on Электро (stock >= 3) but not in store limits or have limit = 0.
-    Excludes products in the blacklist.
+    Excludes products in the global blacklist.
     Returns products that could be added to limits.
     """
     store = await db.stores.find_one({"id": store_id})
@@ -308,8 +308,8 @@ async def get_new_products(store_id: str):
     # Get store limits as a dict
     limits_dict = {item['product']: item['limit'] for item in store.get('limits', [])}
     
-    # Get blacklist for this store
-    blacklist_doc = await db.product_blacklist.find_one({"store_id": store_id})
+    # Get global blacklist (not tied to any store)
+    blacklist_doc = await db.product_blacklist.find_one({"_type": "global"})
     blacklist = set(blacklist_doc.get("products", [])) if blacklist_doc else set()
     
     # Find products on Электро with stock >= 3 that are not in limits or have limit = 0

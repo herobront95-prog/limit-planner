@@ -216,10 +216,10 @@ const StoreEditor = () => {
     }
   };
 
-  // Add product to blacklist
+  // Add product to blacklist (global)
   const handleAddToBlacklist = async (productName) => {
     try {
-      await axios.post(`${API}/stores/${storeId}/blacklist/add`, {
+      await axios.post(`${API}/blacklist/add`, {
         product: productName
       });
       toast.success('Добавлено в чёрный список');
@@ -232,10 +232,10 @@ const StoreEditor = () => {
     }
   };
 
-  // Remove product from blacklist
+  // Remove product from blacklist (global)
   const handleRemoveFromBlacklist = async (productName) => {
     try {
-      await axios.post(`${API}/stores/${storeId}/blacklist/remove`, {
+      await axios.post(`${API}/blacklist/remove`, {
         product: productName
       });
       toast.success('Удалено из чёрного списка');
@@ -246,10 +246,10 @@ const StoreEditor = () => {
     }
   };
 
-  // Fetch blacklist
+  // Fetch global blacklist
   const fetchBlacklist = async () => {
     try {
-      const response = await axios.get(`${API}/stores/${storeId}/blacklist`);
+      const response = await axios.get(`${API}/blacklist`);
       setBlacklist(response.data.products || []);
     } catch (error) {
       console.error('Error fetching blacklist:', error);

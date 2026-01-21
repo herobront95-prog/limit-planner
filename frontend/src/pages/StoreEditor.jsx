@@ -751,6 +751,19 @@ const StoreEditor = () => {
                     </div>
                   )}
                   <Button
+                    onClick={handleOpenBlacklist}
+                    variant="outline"
+                    className="border-gray-300 hover:bg-gray-50"
+                  >
+                    <Ban className="mr-2 h-4 w-4" />
+                    Чёрный список
+                    {blacklist.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 bg-gray-200 text-gray-700">
+                        {blacklist.length}
+                      </Badge>
+                    )}
+                  </Button>
+                  <Button
                     onClick={fetchNewProducts}
                     disabled={newProductsLoading}
                     variant="outline"

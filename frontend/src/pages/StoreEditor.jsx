@@ -215,6 +215,57 @@ const StoreEditor = () => {
     }
   };
 
+  // Add product to blacklist
+  const handleAddToBlacklist = async (productName) => {
+    try {
+      await axios.post(`${API}/stores/${storeId}/blacklist/add`, {
+        product: productName
+      });
+      toast.success('Добавлено в чёрный список');
+      // Remove from new products list
+      setNewProducts(newProducts.filter(p => p.product !== productName));
+      // Add to local blacklist state
+      setBlacklist(prev => [...prev, productName]);
+    } catch (error) {
+      toast.error('Ошибка добавления в чёрный список');
+    }
+  };
+
+  // Remove product from blacklist
+  const handleRemoveFromBlacklist = async (productName) => {
+    try {
+      await axios.post(`${API}/stores/${storeId}/blacklist/remove`, {
+        product: productName
+      });
+      toast.success('Удалено из чёрного списка');
+      // Remove from local blacklist state
+      setBlacklist(prev => prev.filter(p => p !== productName));
+    } catch (error) {
+      toast.error('Ошибка удаления из чёрного списка');
+    }
+  };
+
+  // Fetch blacklist
+  const fetchBlacklist = async () => {
+    try {
+      const response = await axios.get(`${API}/stores/${storeId}/blacklist`);
+      setBlacklist(response.data.products || []);
+    } catch (error) {
+      console.error('Error fetching blacklist:', error);
+    }
+  };
+
+  // Open blacklist dialog
+  const handleOpenBlacklist = () => {
+    fetchBlacklist();
+    setBlacklistDialogOpen(true);
+  };
+
+  // Filter blacklist by search
+  const filteredBlacklist = blacklist.filter(p =>
+    p.toLowerCase().includes(blacklistSearchQuery.toLowerCase())
+  );
+
   // Filter new products by search
   const filteredNewProducts = newProducts.filter(p =>
     p.product.toLowerCase().includes(newProductsSearchQuery.toLowerCase())

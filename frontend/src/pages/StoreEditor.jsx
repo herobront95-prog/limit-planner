@@ -131,9 +131,11 @@ const StoreEditor = () => {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // Format: "Product - limit"
-      if (trimmed.includes(' - ')) {
-        const [product, limitStr] = trimmed.split(' - ');
+      // Format: "Product :: limit"
+      if (trimmed.includes(' :: ')) {
+        const parts = trimmed.split(' :: ');
+        const limitStr = parts.pop(); // Last part is limit
+        const product = parts.join(' :: '); // Rest is product name
         const limit = parseInt(limitStr.trim());
         if (product.trim() && !isNaN(limit)) {
           limits.push({ product: product.trim(), limit });
@@ -148,7 +150,7 @@ const StoreEditor = () => {
     const limits = parseLimitsInput(newLimitsText);
 
     if (limits.length === 0) {
-      toast.error('Введите лимиты в формате: Товар - число');
+      toast.error('Введите лимиты в формате: Товар :: число');
       return;
     }
 

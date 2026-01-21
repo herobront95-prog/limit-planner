@@ -883,16 +883,16 @@ const StoreEditor = () => {
           <DialogHeader>
             <DialogTitle>Добавить лимиты</DialogTitle>
             <DialogDescription>
-              Введите лимиты в формате: Товар - число (каждый с новой строки)
+              Введите лимиты в формате: Товар :: число (каждый с новой строки)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <Textarea
               data-testid="limits-textarea"
               placeholder="Пример:
-Дарксайд 25 - 2
-Квазар X - 5
-МегаТор 100 - 10"
+Дарксайд 25 :: 2
+Квазар X :: 5
+МегаТор 100 :: 10"
               value={newLimitsText}
               onChange={(e) => setNewLimitsText(e.target.value)}
               className="min-h-[200px] font-mono text-sm"

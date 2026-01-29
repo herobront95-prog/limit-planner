@@ -19,7 +19,7 @@ app = FastAPI(
 app.include_router(api_router)
 
 # Serve React build (production)
-BASE_DIR = Path(file).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_BUILD = BASE_DIR.parent / "frontend" / "build"
 
 if FRONTEND_BUILD.exists():

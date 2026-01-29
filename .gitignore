@@ -1,5 +1,24 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# --- Local env (never commit) ---
+.env
+frontend/.env
+backend/.env
+
+# --- Local DB (portable Mongo) ---
+data/
+mongodb/
+
+# --- Frontend build artifacts ---
+frontend/build/
+frontend/node_modules/
+
+# --- Python ---
+pycache/
+*.pyc
+.venv/
+venv/
+
 # IDE and editors
 .idea/
 .vscode/

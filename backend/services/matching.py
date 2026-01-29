@@ -1,10 +1,35 @@
 import re
 from typing import Dict, Optional
+import unicodedata
+
+LAT_TO_CYR = str.maketrans({
+    "A": "А", "B": "В", "C": "С", "E": "Е", "H": "Н",
+    "K": "К", "M": "М", "O": "О", "P": "Р", "T": "Т",
+    "X": "Х", "Y": "У",
+    "a": "а", "c": "с", "e": "е", "o": "о",
+    "p": "р", "x": "х", "y": "у",
+})
+
+def normalize_name(text: str) -> str:
+    if not text:
+        return ""
+
+    text = unicodedata.normalize("NFKC", str(text))
+    text = text.translate(LAT_TO_CYR)
+
+    # привести все тире к обычному дефису
+    text = text.replace("–", "-").replace("—", "-")
+
+    # нормализовать пробелы
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
+
 
 
 def tokenize(text: str) -> tuple:
-    """Split text into word and number tokens"""
-    tokens = re.findall(r'\d+|[a-zA-Zа-яА-ЯёЁ]+', str(text))
+    text = normalize_name(text).lower()
+    tokens = re.findall(r'\d+|[a-zA-Zа-яА-ЯёЁ]+', text)
     return tuple(tokens)
 
 

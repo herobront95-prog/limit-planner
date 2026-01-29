@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from starlette.middleware.cors import CORSMiddleware
 import os
 import logging
@@ -15,6 +17,13 @@ app = FastAPI(
 
 # Include API router
 app.include_router(api_router)
+
+# Serve React build (production)
+BASE_DIR = Path(file).resolve().parent
+FRONTEND_BUILD = BASE_DIR.parent / "frontend" / "build"
+
+if FRONTEND_BUILD.exists():
+    app.mount("/", StaticFiles(directory=FRONTEND_BUILD, html=True), name="frontend")
 
 # CORS middleware
 app.add_middleware(
